@@ -13,3 +13,9 @@ docker ps
 # Stop/remove when needed:
 docker stop reactui-dev
 docker rm reactui-dev
+
+
+## React UI
+
+### Auto update changed code
+docker compose --profile development up --build reactui-dev

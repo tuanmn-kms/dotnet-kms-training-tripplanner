@@ -25,11 +25,11 @@ services:
   # .NET API
   api:
     build:
-      context: ../KMSTraining.API
+      context: ./KMSTraining.API
       dockerfile: Dockerfile
     container_name: kmstraining-api
     ports:
-      - "5001:8080"
+      - "7777:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
@@ -51,13 +51,48 @@ services:
       retries: 3
       start_period: 40s
 
+  # .NET API - Development (bind mount + hot reload)
+  api-dev:
+    build:
+      context: ./KMSTraining.API
+      dockerfile: Dockerfile.dev
+    container_name: kmstraining-api-dev
+    working_dir: /src
+    command: dotnet watch run --project KMSTraining.API.csproj --urls http://0.0.0.0:8080 --property:BaseIntermediateOutputPath=/tmp/obj/ --property:BaseOutputPath=/tmp/bin/
+    ports:
+      - "7777:8080"
+    volumes:
+      - type: bind
+        source: ./KMSTraining.API
+        target: /src
+      - type: volume
+        source: nuget-cache
+        target: /root/.nuget/packages
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__TripPlannerDatabase=Server=sqlserver;Database=TripPlannerDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=true
+      - JwtSettings__SecretKey=YourSuperSecretKeyForJWTTokenGeneration123456789
+      - JwtSettings__Issuer=KMSTraining.API
+      - JwtSettings__Audience=KMSTraining.API.Users
+      - JwtSettings__ExpirationMinutes=60
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - kmstraining-network
+    restart: unless-stopped
+    profiles:
+      - development
+
   # React UI
   reactui:
     build:
-      context: .
+      context: ./kmstraining.reactui
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:5001/api
+        - VITE_API_URL=http://localhost:7777/api
     container_name: kmstraining-reactui
     ports:
       - "3000:80"
@@ -78,6 +113,8 @@ services:
 
 volumes:
   sqlserver-data:
+    driver: local
+  nuget-cache:
     driver: local
 
 networks:

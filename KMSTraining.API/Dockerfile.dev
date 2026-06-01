@@ -1,0 +1,13 @@
+# Development Dockerfile for KMSTraining.API with hot reload
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+
+WORKDIR /src
+
+# Restore dependencies first for better layer caching
+COPY KMSTraining.API.csproj ./
+RUN dotnet restore
+
+EXPOSE 8080
+
+# dotnet watch enables hot reload in the container
+CMD ["dotnet", "watch", "run", "--project", "KMSTraining.API.csproj", "--urls", "http://0.0.0.0:8080", "--property:BaseIntermediateOutputPath=/tmp/obj/", "--property:BaseOutputPath=/tmp/bin/"]

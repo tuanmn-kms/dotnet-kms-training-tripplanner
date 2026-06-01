@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # React UI - Production
   reactui:
@@ -27,19 +25,29 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     container_name: kmstraining-reactui-dev
+    command: npm run dev -- --host 0.0.0.0 --port 63452
     ports:
       - "63452:63452"
     volumes:
-      - .:/app
-      - /app/node_modules
+      - type: bind
+        source: .
+        target: /app
+      - type: volume
+        source: reactui-node-modules
+        target: /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://localhost:5001/api
+      - VITE_API_URL=https://localhost:44391/api
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
     restart: unless-stopped
     networks:
       - kmstraining-network
     profiles:
       - development
+
+volumes:
+  reactui-node-modules:
 
 networks:
   kmstraining-network:
