@@ -1,0 +1,6 @@
+@KMSTraining.API_HostAddress = http://localhost:5037
+
+GET {{KMSTraining.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

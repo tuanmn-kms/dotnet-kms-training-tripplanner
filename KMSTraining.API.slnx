@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="KMSTraining.API/KMSTraining.API.csproj" />
+  <Project Path="KMSTraining.ReactUI/kmstraining.reactui.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="KMSTraining.Tests/KMSTraining.Tests.csproj" />
+</Solution>

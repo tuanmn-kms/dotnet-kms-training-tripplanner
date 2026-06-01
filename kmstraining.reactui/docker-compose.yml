@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # React UI - Production
+  reactui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kmstraining-reactui
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - kmstraining-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # React UI - Development (with hot reload)
+  reactui-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: kmstraining-reactui-dev
+    ports:
+      - "63452:63452"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:5001/api
+    restart: unless-stopped
+    networks:
+      - kmstraining-network
+    profiles:
+      - development
+
+networks:
+  kmstraining-network:
+    driver: bridge
