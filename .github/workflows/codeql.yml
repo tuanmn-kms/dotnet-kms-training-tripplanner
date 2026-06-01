@@ -48,14 +48,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: kmstraining.reactui/package-lock.json
 
       - name: Build React UI
         if: matrix.language == 'javascript-typescript'
         working-directory: kmstraining.reactui
         run: |
-          npm ci
+          npm install
           npm run build
 
       - name: Perform CodeQL Analysis
