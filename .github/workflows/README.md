@@ -4,67 +4,47 @@ This directory contains CI/CD workflows for the Trip Planner project.
 
 ## Workflows Overview
 
-### 1. `.NET CI` (`dotnet-ci.yml`)
+### 1. `CI` (`ci-cd.yml`)
 **Triggers:** Push/PR to `main` or `develop` branches
 
-**Purpose:** Build and test the .NET API
+**Purpose:** Unified quality checks for API and UI
 
 **Steps:**
-- Setup .NET 10
-- Restore NuGet packages
-- Build API in Release configuration
-- Run unit tests with code coverage
-- Upload coverage to Codecov (optional)
+- Build and test .NET API with coverage
+- Upload coverage summary and Codecov report (optional)
+- Build and validate React UI (lint + type check + build)
+- Upload React build artifacts
 
 **Status:** Runs on every push and pull request
 
 ---
 
-### 2. `React UI CI` (`react-ci.yml`)
-**Triggers:** Push/PR to `main` or `develop` branches
-
-**Purpose:** Build and validate the React frontend
-
-**Steps:**
-- Setup Node.js 22
-- Install npm dependencies
-- Run linting (if configured)
-- TypeScript type checking
-- Build production bundle
-- Upload build artifacts
-
-**Status:** Runs on every push and pull request
-
----
-
-### 3. `Docker Build` (`docker-build.yml`)
+### 2. `Docker Build` (`docker-build.yml`)
 **Triggers:** Push/PR to `main` branch
 
-**Purpose:** Validate Docker image builds
+**Purpose:** Build container images and publish on `main` pushes
 
 **Steps:**
-- Build API Docker image
-- Build React UI Docker image (dev)
-- Build React UI Docker image (prod)
+- Build API Docker image (PR + push)
+- Build React UI Docker image (dev and prod)
+- Push images to GHCR on push to `main`
 - Use GitHub Actions cache for faster builds
 
-**Status:** Runs on main branch only
+**Status:** Build validation on PRs, publish on `main` pushes
 
 ---
 
-### 4. `Full CI/CD Pipeline` (`ci-cd.yml`)
-**Triggers:** Push/PR to `main` branch
+### 3. `CodeQL` (`codeql.yml`)
+**Triggers:** Push/PR to `main` and `develop`, plus weekly schedule
 
-**Purpose:** Complete end-to-end validation
+**Purpose:** Security and code scanning for C# and JavaScript/TypeScript
 
 **Steps:**
-- Test .NET API with coverage reports
-- Build React UI
-- Build Docker images (on push only)
-- Generate code coverage summary
-- Upload artifacts for deployment
+- Analyze C# code with CodeQL
+- Analyze JavaScript/TypeScript code with CodeQL
+- Run weekly scheduled security scans
 
-**Status:** Comprehensive workflow for production readiness
+**Status:** Continuous security analysis
 
 ---
 
@@ -89,9 +69,9 @@ To enable Codecov:
 Add these badges to your main README.md:
 
 ```markdown
-![.NET CI](https://github.com/tuanmn-kms/dotnet-kms-training-tripplanner/workflows/.NET%20CI/badge.svg)
-![React UI CI](https://github.com/tuanmn-kms/dotnet-kms-training-tripplanner/workflows/React%20UI%20CI/badge.svg)
+![CI](https://github.com/tuanmn-kms/dotnet-kms-training-tripplanner/workflows/CI/badge.svg)
 ![Docker Build](https://github.com/tuanmn-kms/dotnet-kms-training-tripplanner/workflows/Docker%20Build/badge.svg)
+![CodeQL](https://github.com/tuanmn-kms/dotnet-kms-training-tripplanner/workflows/CodeQL/badge.svg)
 ```
 
 ## Local Testing
