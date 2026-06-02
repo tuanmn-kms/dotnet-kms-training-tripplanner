@@ -9,7 +9,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add DbContext
 builder.Services.AddDbContext<TripPlannerDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TripPlannerDatabase")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("TripPlannerDatabase"),
+        sqlOptions =>
+        {
+            sqlOptions.CommandTimeout(60);
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: null);
+        }));
 
 // Add Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -62,6 +71,14 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Ensure database schema is up to date in development containers.
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<TripPlannerDbContext>();
+    dbContext.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
