@@ -14,6 +14,8 @@ jobs:
   test-api:
     name: Test .NET API
     runs-on: ubuntu-latest
+    env:
+      COVERAGE_THRESHOLD: 70
 
     steps:
     - uses: actions/checkout@v4
@@ -25,6 +27,18 @@ jobs:
 
     - name: Restore
       run: dotnet restore
+
+    - name: Check .NET formatting
+      run: dotnet format KMSTraining.API/KMSTraining.API.csproj --verify-no-changes --severity error
+
+    - name: Scan NuGet dependencies for vulnerabilities
+      shell: pwsh
+      run: |
+        dotnet list KMSTraining.API/KMSTraining.API.csproj package --vulnerable --include-transitive --format json > nuget-vulnerabilities.json
+        if (Select-String -Path nuget-vulnerabilities.json -Pattern '"severity"' -Quiet) {
+          Write-Error "NuGet vulnerability scan found vulnerable packages."
+          exit 1
+        }
 
     - name: Build
       run: dotnet build --no-restore --configuration Release
@@ -49,6 +63,26 @@ jobs:
         name: api-coverage
       continue-on-error: true
 
+    - name: Enforce coverage threshold
+      shell: pwsh
+      run: |
+        $coverageFile = Get-ChildItem -Path ./coverage -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1
+        if (-not $coverageFile) {
+          Write-Error "Coverage file not found in ./coverage"
+          exit 1
+        }
+
+        [xml]$coverageXml = Get-Content $coverageFile.FullName
+        $lineRate = [double]$coverageXml.coverage.'line-rate'
+        $lineCoveragePercent = [math]::Round($lineRate * 100, 2)
+        $threshold = [double]$env:COVERAGE_THRESHOLD
+
+        Write-Host "Line coverage: $lineCoveragePercent% (threshold: $threshold%)"
+        if ($lineCoveragePercent -lt $threshold) {
+          Write-Error "Coverage $lineCoveragePercent% is below threshold $threshold%"
+          exit 1
+        }
+
   build-ui:
     name: Validate React UI
     runs-on: ubuntu-latest
@@ -69,6 +103,9 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
+
+    - name: Scan npm dependencies for vulnerabilities
+      run: npm audit --audit-level=high
 
     - name: Lint
       run: npm run lint --if-present || echo "No lint script found"
