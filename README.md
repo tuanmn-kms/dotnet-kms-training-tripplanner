@@ -17,3 +17,7 @@ Frontend: `cd KMSTraining.ReactUI && npm run dev`
 .NET 10 | React 19 | TypeScript | Tailwind CSS | SQL Server
 
 Built for KMS Training
+
+
+## Run coverage locally
+dotnet test KMSTraining.Tests/KMSTraining.Tests.csproj --configuration Release --collect:"XPlat Code Coverage" --results-directory ./coverage-local --settings KMSTraining.Tests/coverlet.runsettings
