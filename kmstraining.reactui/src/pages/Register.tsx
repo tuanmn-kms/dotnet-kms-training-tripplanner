@@ -1,28 +1,23 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaArrowLeft, FaEnvelope, FaIdBadge, FaLock, FaUser, FaUserPlus } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import authService, { RegisterDto } from '../services/authService';
-import { FaPlane } from 'react-icons/fa';
+import BrandMark from '../components/ui/BrandMark';
+import { asApiError, getApiMessage, getValidationMessages } from '../utils/errors';
 
-const getRegisterErrorMessage = (err: any): string => {
-  const responseData = err?.response?.data;
-
-  if (responseData?.message) {
-    return responseData.message;
+const getRegisterErrorMessage = (err: unknown): string => {
+  const apiMessage = getApiMessage(err);
+  if (apiMessage) {
+    return apiMessage;
   }
 
-  const errors = responseData?.errors;
-  if (errors && typeof errors === 'object') {
-    const messages = Object.values(errors)
-      .flatMap((value) => (Array.isArray(value) ? value : [String(value)]))
-      .filter(Boolean);
-
-    if (messages.length > 0) {
-      return messages.join(' ');
-    }
+  const validationMessages = getValidationMessages(err);
+  if (validationMessages.length > 0) {
+    return validationMessages.join(' ');
   }
 
-  if (err?.code === 'ERR_NETWORK') {
+  if (asApiError(err).code === 'ERR_NETWORK') {
     return 'Cannot reach the API server. Please make sure https://localhost:7777 is running.';
   }
 
@@ -71,7 +66,7 @@ const Register: React.FC = () => {
       const response = await authService.register(payload);
       login(response.token, response);
       navigate('/trips');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getRegisterErrorMessage(err));
     } finally {
       setLoading(false);
@@ -83,125 +78,159 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-2xl surface-card rounded-3xl p-6 sm:p-8">
-        <div className="text-center mb-6">
-          <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-teal-100 text-teal-700 mb-3">
-            <FaPlane className="text-xl" />
-          </span>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900">Create Your Account</h1>
-          <p className="text-slate-600 mt-2">Start building your travel plans in minutes.</p>
+    <div className="flex min-h-screen items-center justify-center px-4 py-8">
+      <div className="w-full max-w-2xl">
+        <div className="mb-6 flex justify-center">
+          <BrandMark />
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Sign Up</h2>
-
-          {error && (
-            <div className="alert alert-error">
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-slate-700">Username *</span>
-            </label>
-            <input
-              type="text"
-              name="username"
-              placeholder="Choose a username"
-              className="input input-bordered border-slate-200"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
+        <div className="form-panel p-6 sm:p-8">
+          <div className="mb-6 text-center">
+            <p className="page-kicker mb-2">New account</p>
+            <h1 className="text-3xl font-black text-slate-900 sm:text-4xl">Create Your Account</h1>
+            <p className="mt-2 text-slate-600">Start building your travel plans in minutes.</p>
           </div>
 
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-slate-700">Email *</span>
-            </label>
-            <input
-              type="email"
-              name="email"
-              placeholder="your@email.com"
-              className="input input-bordered border-slate-200"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <div className="alert alert-error">
+                <span>{error}</span>
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="form-control">
               <label className="label">
-                <span className="label-text text-slate-700">First Name</span>
+                <span className="label-text font-semibold text-slate-700">Username *</span>
               </label>
-              <input
-                type="text"
-                name="firstName"
-                placeholder="John"
-                className="input input-bordered border-slate-200"
-                value={formData.firstName}
-                onChange={handleChange}
-              />
+              <div className="relative">
+                <FaUser className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Choose a username"
+                  className="input input-bordered field-control pl-11"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text text-slate-700">Last Name</span>
+                <span className="label-text font-semibold text-slate-700">Email *</span>
               </label>
-              <input
-                type="text"
-                name="lastName"
-                placeholder="Doe"
-                className="input input-bordered border-slate-200"
-                value={formData.lastName}
-                onChange={handleChange}
-              />
+              <div className="relative">
+                <FaEnvelope className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="you@example.com"
+                  className="input input-bordered field-control pl-11"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-slate-700">Password *</span>
-            </label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Min 6 characters"
-              className="input input-bordered border-slate-200"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold text-slate-700">First Name</span>
+                </label>
+                <div className="relative">
+                  <FaIdBadge className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  <input
+                    type="text"
+                    name="firstName"
+                    placeholder="John"
+                    className="input input-bordered field-control pl-11"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
 
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-slate-700">Confirm Password *</span>
-            </label>
-            <input
-              type="password"
-              placeholder="Re-enter password"
-              className="input input-bordered border-slate-200"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold text-slate-700">Last Name</span>
+                </label>
+                <div className="relative">
+                  <FaIdBadge className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  <input
+                    type="text"
+                    name="lastName"
+                    placeholder="Doe"
+                    className="input input-bordered field-control pl-11"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            </div>
 
-          <div className="form-control pt-2">
-            <button type="submit" className={`btn border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white ${loading ? 'loading' : ''}`} disabled={loading}>
-              {loading ? 'Creating account...' : 'Sign Up'}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold text-slate-700">Password *</span>
+                </label>
+                <div className="relative">
+                  <FaLock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="Min 6 characters"
+                    className="input input-bordered field-control pl-11"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold text-slate-700">Confirm Password *</span>
+                </label>
+                <div className="relative">
+                  <FaLock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  <input
+                    type="password"
+                    placeholder="Re-enter password"
+                    className="input input-bordered field-control pl-11"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" className={`btn w-full primary-action ${loading ? 'loading' : ''}`} disabled={loading}>
+              {loading ? (
+                'Creating account...'
+              ) : (
+                <>
+                  <FaUserPlus className="mr-2" aria-hidden="true" />
+                  Sign Up
+                </>
+              )}
             </button>
-          </div>
 
-          <div className="text-center pt-2">
-            <span className="text-sm text-slate-600">Already have an account? </span>
-            <Link to="/login" className="link link-info text-sm">Login</Link>
-          </div>
-        </form>
+            <div className="pt-2 text-center">
+              <span className="text-sm text-slate-600">Already have an account? </span>
+              <Link to="/login" className="text-sm font-semibold text-cyan-700 hover:text-cyan-800">Login</Link>
+            </div>
+          </form>
+        </div>
+
+        <div className="mt-5 text-center">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 sm:text-base">
+            <FaArrowLeft aria-hidden="true" />
+            Back to Home
+          </Link>
+        </div>
       </div>
     </div>
   );

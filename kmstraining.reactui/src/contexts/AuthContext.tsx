@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import authService, { AuthResponse, User } from '../services/authService';
 
 interface AuthContextType {
@@ -23,26 +24,26 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const getStoredUser = (): User | null => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+
+  if (!token || !userStr) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(userStr) as User;
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-
-    if (token && userStr) {
-      try {
-        const userData = JSON.parse(userStr);
-        setUser(userData);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    }
-    setLoading(false);
-  }, []);
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
 
   const login = (token: string, userData: AuthResponse) => {
     localStorage.setItem('token', token);
@@ -66,7 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user,
     login,
     logout,
-    loading,
+    loading: false,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

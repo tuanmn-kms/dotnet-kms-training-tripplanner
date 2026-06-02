@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaArrowLeft, FaLock, FaSignInAlt, FaUser } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import authService, { LoginDto } from '../services/authService';
-import { FaPlane, FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
+import BrandMark from '../components/ui/BrandMark';
+import { asApiError, getApiMessage } from '../utils/errors';
 
-const getErrorMessage = (err: any): string => {
-  const apiMessage = err?.response?.data?.message;
+const getErrorMessage = (err: unknown): string => {
+  const apiMessage = getApiMessage(err);
   if (apiMessage) {
     return apiMessage;
   }
 
-  if (err?.code === 'ERR_NETWORK') {
+  const apiError = asApiError(err);
+  if (apiError.code === 'ERR_NETWORK') {
     return 'Cannot reach the API server. Please ensure the backend is running.';
   }
 
@@ -45,7 +48,7 @@ const Login: React.FC = () => {
       const response = await authService.signIn(payload);
       login(response.token, response);
       navigate('/trips');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
@@ -57,23 +60,22 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8">
+    <div className="flex min-h-screen items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="surface-card rounded-3xl p-6 sm:p-8">
-          <div className="text-center mb-7">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-cyan-100 rounded-full mb-4 text-cyan-700">
-              <FaPlane className="text-2xl" />
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2">Welcome Back</h1>
-            <p className="text-slate-600">Sign in to continue planning your next trip.</p>
+        <div className="mb-6 flex justify-center">
+          <BrandMark />
+        </div>
+
+        <div className="form-panel p-6 sm:p-8">
+          <div className="mb-7 text-center">
+            <p className="page-kicker mb-2">Welcome back</p>
+            <h1 className="text-3xl font-black text-slate-900 sm:text-4xl">Sign In</h1>
+            <p className="mt-2 text-slate-600">Continue planning your next trip.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="alert alert-error shadow-sm text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="alert alert-error text-sm shadow-sm">
                 <span>{error}</span>
               </div>
             )}
@@ -83,15 +85,15 @@ const Login: React.FC = () => {
                 <span className="label-text font-semibold text-slate-700">Username or Email</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaUser className="text-slate-400" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                  <FaUser className="text-slate-400" aria-hidden="true" />
                 </div>
                 <input
                   type="text"
                   name="usernameOrEmail"
                   value={formData.usernameOrEmail}
                   onChange={handleChange}
-                  className="input input-bordered w-full pl-11 border-slate-200 focus:border-cyan-500"
+                  className="input input-bordered field-control pl-11"
                   placeholder="Enter your username or email"
                   required
                 />
@@ -103,52 +105,51 @@ const Login: React.FC = () => {
                 <span className="label-text font-semibold text-slate-700">Password</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaLock className="text-slate-400" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                  <FaLock className="text-slate-400" aria-hidden="true" />
                 </div>
                 <input
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="input input-bordered w-full pl-11 border-slate-200 focus:border-cyan-500"
+                  className="input input-bordered field-control pl-11"
                   placeholder="Enter your password"
                   required
                 />
               </div>
             </div>
 
-            <div className="form-control pt-2">
-              <button
-                type="submit"
-                className={`btn border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white ${loading ? 'loading' : ''}`}
-                disabled={loading}
-              >
-                {loading ? (
-                  'Signing in...'
-                ) : (
-                  <>
-                    <FaSignInAlt className="mr-2" />
-                    Sign In
-                  </>
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              className={`btn w-full primary-action ${loading ? 'loading' : ''}`}
+              disabled={loading}
+            >
+              {loading ? (
+                'Signing in...'
+              ) : (
+                <>
+                  <FaSignInAlt className="mr-2" aria-hidden="true" />
+                  Sign In
+                </>
+              )}
+            </button>
 
             <div className="divider text-slate-400">OR</div>
 
-            <div className="text-center text-sm sm:text-base text-slate-600">
+            <div className="text-center text-sm text-slate-600 sm:text-base">
               Don't have an account?{' '}
-              <Link to="/register" className="text-cyan-700 hover:text-cyan-800 font-semibold">
+              <Link to="/register" className="font-semibold text-cyan-700 hover:text-cyan-800">
                 Create one now
               </Link>
             </div>
           </form>
         </div>
 
-        <div className="text-center mt-5">
-          <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm sm:text-base">
-            ← Back to Home
+        <div className="mt-5 text-center">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 sm:text-base">
+            <FaArrowLeft aria-hidden="true" />
+            Back to Home
           </Link>
         </div>
       </div>

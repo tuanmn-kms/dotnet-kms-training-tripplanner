@@ -7,14 +7,14 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen">
+    <div className="page-shell">
       <Navbar />
-      <main className="page-container py-6 sm:py-8">
+      <main className="page-container page-main py-6 sm:py-8">
         {children}
       </main>
-      <footer className="mt-8 border-t border-slate-200/70 bg-white/70 backdrop-blur">
-        <div className="page-container py-4 sm:py-5 text-center text-sm sm:text-base text-slate-600">
-          Copyright © 2026 - KMS Trip Planner. All rights reserved.
+      <footer className="app-footer">
+        <div className="page-container py-4 text-center text-sm text-slate-600 sm:py-5 sm:text-base">
+          Copyright (c) 2026 - KMS Trip Planner. All rights reserved.
         </div>
       </footer>
     </div>

@@ -1,115 +1,136 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import {
+  FaCalendarCheck,
+  FaGlobe,
+  FaMapMarkedAlt,
+  FaMoneyBillWave,
+  FaRocket,
+  FaStar,
+  FaUsers,
+} from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
-import { FaPlane, FaMapMarkedAlt, FaMoneyBillWave, FaCalendarCheck, FaRocket, FaGlobe, FaUsers, FaStar } from 'react-icons/fa';
+import BrandMark from '../components/ui/BrandMark';
+import heroImage from '../assets/hero.png';
 
 const Home: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
   return (
     <div className="min-h-screen">
-      <header className="page-container pt-4 sm:pt-6">
-        <div className="navbar bg-white/80 backdrop-blur-lg rounded-2xl border border-slate-200/70 px-3 sm:px-5">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 font-black text-slate-800 tracking-tight text-base sm:text-lg">
-              <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
-                <FaPlane />
-              </span>
-              KMS Trip Planner
-            </div>
-          </div>
-          <div className="flex-none gap-2">
-            <Link to="/login" className="btn btn-sm sm:btn-md border-0 bg-slate-100 text-slate-700 hover:bg-slate-200">Login</Link>
-            <Link to="/register" className="btn btn-sm sm:btn-md border-0 bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600">Get Started</Link>
-          </div>
+      <header className="page-container py-4">
+        <div className="flex min-h-14 flex-wrap items-center justify-between gap-3">
+          <BrandMark compact />
+          <nav className="flex gap-2" aria-label="Home navigation">
+            {isAuthenticated ? (
+              <Link to="/trips" className="btn btn-sm sm:btn-md primary-action">My Trips</Link>
+            ) : (
+              <>
+                <Link to="/login" className="btn btn-sm sm:btn-md quiet-action">Login</Link>
+                <Link to="/register" className="btn btn-sm sm:btn-md primary-action">Get Started</Link>
+              </>
+            )}
+          </nav>
         </div>
       </header>
 
-      <section className="page-container py-8 sm:py-16">
-        <div className="surface-card rounded-3xl p-6 sm:p-10 lg:p-14 relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-cyan-200/35 blur-3xl"></div>
-          <div className="absolute -bottom-16 -left-8 w-52 h-52 rounded-full bg-amber-200/35 blur-3xl"></div>
-
-          <div className="relative z-10 grid lg:grid-cols-2 gap-10 items-center">
-            <div>
-              <p className="badge border-0 bg-teal-100 text-teal-700 mb-4">Smart Planning Platform</p>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-slate-900">
-                Plan Better.
-                <span className="heading-gradient block">Travel Smarter.</span>
-              </h1>
-              <p className="mt-4 text-slate-600 text-base sm:text-lg max-w-xl">
-                Build trips with destinations, activities, and budgets in one focused workspace designed for modern travelers.
+      <main>
+        <section
+          className="home-hero"
+          style={{
+            backgroundImage: `linear-gradient(90deg, rgb(248 250 252 / 0.98), rgb(248 250 252 / 0.9) 48%, rgb(248 250 252 / 0.68)), url(${heroImage})`,
+          }}
+        >
+          <div className="page-container">
+            <div className="max-w-2xl py-12 sm:py-16">
+              <p className="page-kicker mb-3">Travel planning workspace</p>
+              <h1 className="page-title">KMS Trip Planner</h1>
+              <p className="page-subtitle mt-5 max-w-xl sm:text-lg">
+                Plan destinations, activities, dates, and budgets in one calm workspace built for real trip decisions.
               </p>
-              <div className="mt-8 flex flex-col sm:flex-row gap-3">
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 {!isAuthenticated ? (
                   <>
-                    <Link to="/register" className="btn btn-md sm:btn-lg border-0 bg-slate-900 text-white hover:bg-slate-800 w-full sm:w-auto">
-                      <FaRocket className="mr-2" />
-                      Start Free
+                    <Link to="/register" className="btn btn-md sm:btn-lg primary-action w-full sm:w-auto">
+                      <FaRocket aria-hidden="true" className="mr-2" />
+                      Start Planning
                     </Link>
-                    <Link to="/login" className="btn btn-md sm:btn-lg border-slate-300 text-slate-700 bg-white/70 hover:bg-slate-100 w-full sm:w-auto">
+                    <Link to="/login" className="btn btn-md sm:btn-lg quiet-action w-full sm:w-auto">
                       Sign In
                     </Link>
                   </>
                 ) : (
-                  <Link to="/trips" className="btn btn-md sm:btn-lg border-0 bg-slate-900 text-white hover:bg-slate-800 w-full sm:w-auto">
-                    <FaMapMarkedAlt className="mr-2" />
+                  <Link to="/trips" className="btn btn-md sm:btn-lg primary-action w-full sm:w-auto">
+                    <FaMapMarkedAlt aria-hidden="true" className="mr-2" />
                     Open My Trips
                   </Link>
                 )}
               </div>
             </div>
+          </div>
+        </section>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div className="surface-card rounded-2xl p-4 sm:p-5">
-                <FaUsers className="text-teal-600 text-2xl mb-3" />
-                <p className="text-2xl sm:text-3xl font-black text-slate-900">10K+</p>
-                <p className="text-sm text-slate-600">Active planners</p>
-              </div>
-              <div className="surface-card rounded-2xl p-4 sm:p-5">
-                <FaGlobe className="text-cyan-600 text-2xl mb-3" />
-                <p className="text-2xl sm:text-3xl font-black text-slate-900">150+</p>
-                <p className="text-sm text-slate-600">Countries</p>
-              </div>
-              <div className="surface-card rounded-2xl p-4 sm:p-5">
-                <FaStar className="text-amber-500 text-2xl mb-3" />
-                <p className="text-2xl sm:text-3xl font-black text-slate-900">50K+</p>
-                <p className="text-sm text-slate-600">Trips created</p>
-              </div>
-              <div className="surface-card rounded-2xl p-4 sm:p-5">
-                <FaMoneyBillWave className="text-emerald-600 text-2xl mb-3" />
-                <p className="text-2xl sm:text-3xl font-black text-slate-900">100%</p>
-                <p className="text-sm text-slate-600">Budget visibility</p>
-              </div>
+        <section className="page-container py-8 sm:py-10">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            <div className="metric-tile p-4">
+              <FaUsers className="mb-3 text-2xl text-teal-600" aria-hidden="true" />
+              <p className="text-2xl font-black text-slate-900 sm:text-3xl">10K+</p>
+              <p className="text-sm text-slate-600">Active planners</p>
+            </div>
+            <div className="metric-tile p-4">
+              <FaGlobe className="mb-3 text-2xl text-cyan-600" aria-hidden="true" />
+              <p className="text-2xl font-black text-slate-900 sm:text-3xl">150+</p>
+              <p className="text-sm text-slate-600">Countries</p>
+            </div>
+            <div className="metric-tile p-4">
+              <FaStar className="mb-3 text-2xl text-amber-500" aria-hidden="true" />
+              <p className="text-2xl font-black text-slate-900 sm:text-3xl">50K+</p>
+              <p className="text-sm text-slate-600">Trips created</p>
+            </div>
+            <div className="metric-tile p-4">
+              <FaMoneyBillWave className="mb-3 text-2xl text-emerald-600" aria-hidden="true" />
+              <p className="text-2xl font-black text-slate-900 sm:text-3xl">100%</p>
+              <p className="text-sm text-slate-600">Budget visibility</p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="page-container pb-10 sm:pb-16">
-        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mb-6 sm:mb-8">What You Can Do</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          <article className="surface-card rounded-2xl p-5 sm:p-6">
-            <FaMapMarkedAlt className="text-cyan-600 text-3xl mb-4" />
-            <h3 className="text-xl font-bold text-slate-900">Destination Mapping</h3>
-            <p className="text-slate-600 mt-2">Organize countries and cities in a clean timeline for each trip.</p>
-          </article>
-          <article className="surface-card rounded-2xl p-5 sm:p-6">
-            <FaCalendarCheck className="text-teal-600 text-3xl mb-4" />
-            <h3 className="text-xl font-bold text-slate-900">Activity Scheduling</h3>
-            <p className="text-slate-600 mt-2">Plan every day with activities and time windows you can edit fast.</p>
-          </article>
-          <article className="surface-card rounded-2xl p-5 sm:p-6">
-            <FaMoneyBillWave className="text-amber-600 text-3xl mb-4" />
-            <h3 className="text-xl font-bold text-slate-900">Budget Control</h3>
-            <p className="text-slate-600 mt-2">Track planned vs actual costs by category before spending surprises hit.</p>
-          </article>
-        </div>
-      </section>
+        <section className="page-container pb-12 sm:pb-16">
+          <div className="mb-6">
+            <p className="page-kicker mb-2">Core workflow</p>
+            <h2 className="section-title">What You Can Do</h2>
+          </div>
 
-      <footer className="border-t border-slate-200/70 bg-white/70">
-        <div className="page-container py-6 sm:py-8 text-center text-sm sm:text-base text-slate-600">
-          Copyright © 2026 - KMS Trip Planner. All rights reserved.
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 sm:gap-6">
+            <article className="surface-card p-5 sm:p-6">
+              <span className="icon-chip mb-4 bg-cyan-50 text-cyan-700">
+                <FaMapMarkedAlt className="text-xl" aria-hidden="true" />
+              </span>
+              <h3 className="text-lg font-bold text-slate-900">Destination Mapping</h3>
+              <p className="mt-2 text-slate-600">Organize countries and cities in a clean timeline for each trip.</p>
+            </article>
+            <article className="surface-card p-5 sm:p-6">
+              <span className="icon-chip mb-4 bg-teal-50 text-teal-700">
+                <FaCalendarCheck className="text-xl" aria-hidden="true" />
+              </span>
+              <h3 className="text-lg font-bold text-slate-900">Activity Scheduling</h3>
+              <p className="mt-2 text-slate-600">Plan every day with activities and time windows you can edit fast.</p>
+            </article>
+            <article className="surface-card p-5 sm:p-6">
+              <span className="icon-chip mb-4 bg-amber-50 text-amber-700">
+                <FaMoneyBillWave className="text-xl" aria-hidden="true" />
+              </span>
+              <h3 className="text-lg font-bold text-slate-900">Budget Control</h3>
+              <p className="mt-2 text-slate-600">Track planned vs actual costs by category before surprises hit.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer className="app-footer">
+        <div className="page-container py-6 text-center text-sm text-slate-600 sm:py-8 sm:text-base">
+          Copyright (c) 2026 - KMS Trip Planner. All rights reserved.
         </div>
       </footer>
     </div>

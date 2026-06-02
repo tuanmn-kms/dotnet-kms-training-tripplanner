@@ -1,24 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import tripService, { TripDetail, Destination, Activity, Budget, CreateDestinationDto, CreateActivityDto, CreateBudgetDto } from '../services/tripService';
-import { FaMapMarkedAlt, FaCalendarAlt, FaMoneyBillWave, FaPlus, FaEdit, FaTrash, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaCalendarAlt,
+  FaEdit,
+  FaMapMarkedAlt,
+  FaMapMarkerAlt,
+  FaMoneyBillWave,
+  FaPlus,
+  FaTrash,
+} from 'react-icons/fa';
 import Layout from '../components/Layout/Layout';
+import StatusBadge from '../components/ui/StatusBadge';
+import tripService, { CreateActivityDto, CreateBudgetDto, CreateDestinationDto, TripDetail } from '../services/tripService';
+import { getApiMessage } from '../utils/errors';
 
-const TripDetail: React.FC = () => {
+const currency = (value: number) => `$${value.toFixed(2)}`;
+
+const toNumber = (value: string) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const TripDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const tripId = Number(id);
+
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'destinations' | 'budgets'>('destinations');
-
-  // Modal states
   const [showDestinationModal, setShowDestinationModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
-  const [selectedDestination, setSelectedDestination] = useState<number | null>(null);
 
-  // Form states
   const [destinationForm, setDestinationForm] = useState<CreateDestinationDto>({
     name: '',
     country: '',
@@ -26,7 +43,7 @@ const TripDetail: React.FC = () => {
     description: '',
     arrivalDate: '',
     departureDate: '',
-    tripId: parseInt(id!),
+    tripId,
   });
 
   const [activityForm, setActivityForm] = useState<CreateActivityDto>({
@@ -44,22 +61,75 @@ const TripDetail: React.FC = () => {
     plannedAmount: 0,
     actualAmount: 0,
     notes: '',
-    tripId: parseInt(id!),
+    tripId,
   });
 
-  useEffect(() => {
-    loadTrip();
-  }, [id]);
-
-  const loadTrip = async () => {
+  const refreshTrip = useCallback(async () => {
     try {
-      const data = await tripService.getTrip(parseInt(id!));
+      const data = await tripService.getTrip(tripId);
       setTrip(data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
+  }, [tripId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    tripService.getTrip(tripId)
+      .then((data) => {
+        if (isMounted) {
+          setTrip(data);
+        }
+      })
+      .catch((err: unknown) => {
+        console.error(err);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [tripId]);
+
+  const resetDestinationForm = () => {
+    setDestinationForm({
+      name: '',
+      country: '',
+      city: '',
+      description: '',
+      arrivalDate: '',
+      departureDate: '',
+      tripId,
+    });
+  };
+
+  const resetActivityForm = () => {
+    setActivityForm({
+      name: '',
+      description: '',
+      scheduledDateTime: '',
+      durationMinutes: 60,
+      location: '',
+      estimatedCost: 0,
+      destinationId: 0,
+    });
+  };
+
+  const resetBudgetForm = () => {
+    setBudgetForm({
+      category: '',
+      plannedAmount: 0,
+      actualAmount: 0,
+      notes: '',
+      tripId,
+    });
   };
 
   const handleCreateDestination = async (e: React.FormEvent) => {
@@ -67,18 +137,10 @@ const TripDetail: React.FC = () => {
     try {
       await tripService.createDestination(destinationForm);
       setShowDestinationModal(false);
-      setDestinationForm({
-        name: '',
-        country: '',
-        city: '',
-        description: '',
-        arrivalDate: '',
-        departureDate: '',
-        tripId: parseInt(id!),
-      });
-      loadTrip();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create destination');
+      resetDestinationForm();
+      refreshTrip();
+    } catch (err: unknown) {
+      alert(getApiMessage(err) || 'Failed to create destination');
     }
   };
 
@@ -87,18 +149,10 @@ const TripDetail: React.FC = () => {
     try {
       await tripService.createActivity(activityForm);
       setShowActivityModal(false);
-      setActivityForm({
-        name: '',
-        description: '',
-        scheduledDateTime: '',
-        durationMinutes: 60,
-        location: '',
-        estimatedCost: 0,
-        destinationId: 0,
-      });
-      loadTrip();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create activity');
+      resetActivityForm();
+      refreshTrip();
+    } catch (err: unknown) {
+      alert(getApiMessage(err) || 'Failed to create activity');
     }
   };
 
@@ -107,16 +161,10 @@ const TripDetail: React.FC = () => {
     try {
       await tripService.createBudget(budgetForm);
       setShowBudgetModal(false);
-      setBudgetForm({
-        category: '',
-        plannedAmount: 0,
-        actualAmount: 0,
-        notes: '',
-        tripId: parseInt(id!),
-      });
-      loadTrip();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create budget');
+      resetBudgetForm();
+      refreshTrip();
+    } catch (err: unknown) {
+      alert(getApiMessage(err) || 'Failed to create budget');
     }
   };
 
@@ -124,19 +172,9 @@ const TripDetail: React.FC = () => {
     if (!window.confirm('Are you sure? This will delete all activities in this destination.')) return;
     try {
       await tripService.deleteDestination(destId);
-      loadTrip();
-    } catch (err) {
+      refreshTrip();
+    } catch {
       alert('Failed to delete destination');
-    }
-  };
-
-  const handleDeleteActivity = async (activityId: number) => {
-    if (!window.confirm('Delete this activity?')) return;
-    try {
-      await tripService.deleteActivity(activityId);
-      loadTrip();
-    } catch (err) {
-      alert('Failed to delete activity');
     }
   };
 
@@ -144,35 +182,24 @@ const TripDetail: React.FC = () => {
     if (!window.confirm('Delete this budget item?')) return;
     try {
       await tripService.deleteBudget(budgetId);
-      loadTrip();
-    } catch (err) {
+      refreshTrip();
+    } catch {
       alert('Failed to delete budget');
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      Planning: 'badge-info',
-      Confirmed: 'badge-success',
-      InProgress: 'badge-warning',
-      Completed: 'badge-neutral',
-      Cancelled: 'badge-error',
-    };
-    return `badge ${statusColors[status] || 'badge-ghost'}`;
-  };
-
   const getTotalBudget = () => {
-    return trip?.budgets.reduce((sum, b) => sum + b.plannedAmount, 0) || 0;
+    return trip?.budgets.reduce((sum, budget) => sum + budget.plannedAmount, 0) || 0;
   };
 
   const getTotalSpent = () => {
-    return trip?.budgets.reduce((sum, b) => sum + b.actualAmount, 0) || 0;
+    return trip?.budgets.reduce((sum, budget) => sum + budget.actualAmount, 0) || 0;
   };
 
   if (loading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center min-h-[320px] sm:min-h-[400px]">
+        <div className="flex min-h-[320px] items-center justify-center sm:min-h-[400px]">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
       </Layout>
@@ -189,176 +216,201 @@ const TripDetail: React.FC = () => {
     );
   }
 
+  const totalBudget = getTotalBudget();
+  const totalSpent = getTotalSpent();
+  const remainingBudget = totalBudget - totalSpent;
+
   return (
     <Layout>
-      <div className="space-y-6 max-w-6xl mx-auto">
-        {/* Trip Header */}
-        <div className="card surface-card rounded-3xl">
-          <div className="card-body">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">{trip.name}</h1>
-                <span className={getStatusBadge(trip.status)}>{trip.status}</span>
+      <div className="space-y-6">
+        <button type="button" className="btn btn-sm quiet-action" onClick={() => navigate('/trips')}>
+          <FaArrowLeft aria-hidden="true" />
+          Back to Trips
+        </button>
+
+        <header className="border-b border-slate-200 pb-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="page-kicker mb-2">Trip Overview</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="section-title">{trip.name}</h1>
+                <StatusBadge status={trip.status} />
               </div>
-              <Link to={`/trips/${trip.id}/edit`} className="btn btn-sm sm:btn-md border-0 bg-slate-100 text-slate-700 hover:bg-cyan-100 w-full sm:w-auto">
-                <FaEdit /> Edit
-              </Link>
+              {trip.description && (
+                <p className="mt-3 max-w-3xl text-slate-600">{trip.description}</p>
+              )}
             </div>
 
-            {trip.description && (
-              <p className="text-lg mt-4">{trip.description}</p>
-            )}
+            <Link to={`/trips/${trip.id}/edit`} className="btn quiet-action w-full sm:w-auto">
+              <FaEdit aria-hidden="true" />
+              Edit
+            </Link>
+          </div>
 
-            <div className="flex flex-wrap items-center mt-4 text-sm sm:text-base text-slate-700">
-              <FaCalendarAlt className="mr-2 text-primary" />
-              <span>{format(new Date(trip.startDate), 'MMM dd, yyyy')}</span>
-              <span className="mx-3">→</span>
-              <span>{format(new Date(trip.endDate), 'MMM dd, yyyy')}</span>
-            </div>
+          <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-slate-600 sm:text-base">
+            <FaCalendarAlt className="text-cyan-700" aria-hidden="true" />
+            <span>{format(new Date(trip.startDate), 'MMM dd, yyyy')}</span>
+            <FaArrowRight className="text-slate-400" aria-hidden="true" />
+            <span>{format(new Date(trip.endDate), 'MMM dd, yyyy')}</span>
+          </div>
 
-            {/* Stats */}
-            <div className="stats stats-vertical lg:stats-horizontal bg-white/80 border border-slate-200/80 shadow mt-6">
-              <div className="stat">
-                <div className="stat-figure text-primary">
-                  <FaMapMarkedAlt className="text-3xl" />
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="metric-tile p-4">
+              <div className="stat p-0">
+                <div className="stat-figure text-cyan-700">
+                  <FaMapMarkedAlt className="text-2xl" aria-hidden="true" />
                 </div>
                 <div className="stat-title">Destinations</div>
-                <div className="stat-value text-primary">{trip.destinations.length}</div>
+                <div className="stat-value text-cyan-700">{trip.destinations.length}</div>
               </div>
-
-              <div className="stat">
-                <div className="stat-figure text-secondary">
-                  <FaMoneyBillWave className="text-3xl" />
+            </div>
+            <div className="metric-tile p-4">
+              <div className="stat p-0">
+                <div className="stat-figure text-emerald-700">
+                  <FaMoneyBillWave className="text-2xl" aria-hidden="true" />
                 </div>
-                <div className="stat-title">Budget</div>
-                <div className="stat-value text-secondary">${getTotalBudget().toFixed(2)}</div>
-                <div className="stat-desc">Spent: ${getTotalSpent().toFixed(2)}</div>
+                <div className="stat-title">Planned Budget</div>
+                <div className="stat-value text-emerald-700">{currency(totalBudget)}</div>
+              </div>
+            </div>
+            <div className="metric-tile p-4">
+              <div className="stat p-0">
+                <div className="stat-figure text-amber-600">
+                  <FaMoneyBillWave className="text-2xl" aria-hidden="true" />
+                </div>
+                <div className="stat-title">Remaining</div>
+                <div className={`stat-value ${remainingBudget < 0 ? 'text-error' : 'text-amber-600'}`}>{currency(remainingBudget)}</div>
+                <div className="stat-desc">Spent: {currency(totalSpent)}</div>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Tabs */}
-        <div className="tabs tabs-boxed bg-white/85 border border-slate-200/80 shadow">
-          <a
-            className={`tab tab-lg ${activeTab === 'destinations' ? 'tab-active' : ''}`}
+        <div className="tabs tabs-boxed w-full rounded-lg border border-slate-200 bg-white/85 p-1 shadow-sm sm:w-auto">
+          <button
+            type="button"
+            className={`tab h-auto min-h-11 flex-1 gap-2 px-3 sm:flex-none ${activeTab === 'destinations' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('destinations')}
           >
-            <FaMapMarkedAlt className="mr-2" />
-            Destinations & Activities
-          </a>
-          <a
-            className={`tab tab-lg ${activeTab === 'budgets' ? 'tab-active' : ''}`}
+            <FaMapMarkedAlt aria-hidden="true" />
+            <span>Destinations</span>
+          </button>
+          <button
+            type="button"
+            className={`tab h-auto min-h-11 flex-1 gap-2 px-3 sm:flex-none ${activeTab === 'budgets' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('budgets')}
           >
-            <FaMoneyBillWave className="mr-2" />
-            Budgets
-          </a>
+            <FaMoneyBillWave aria-hidden="true" />
+            <span>Budgets</span>
+          </button>
         </div>
 
-        {/* Destinations Tab */}
         {activeTab === 'destinations' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-              <h2 className="text-2xl font-black text-slate-900">Destinations</h2>
+          <section className="space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="page-kicker mb-2">Itinerary</p>
+                <h2 className="section-title">Destinations</h2>
+              </div>
               <button
                 onClick={() => setShowDestinationModal(true)}
-                className="btn border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white w-full sm:w-auto"
+                className="btn primary-action w-full sm:w-auto"
               >
-                <FaPlus className="mr-2" />
+                <FaPlus className="mr-2" aria-hidden="true" />
                 Add Destination
               </button>
             </div>
 
             {trip.destinations.length === 0 ? (
-              <div className="card surface-card rounded-2xl">
-                <div className="card-body text-center">
-                  <p className="text-lg">No destinations yet. Add your first destination!</p>
-                </div>
+              <div className="empty-state p-8 text-center">
+                <span className="icon-chip mx-auto mb-4 bg-cyan-50 text-cyan-700">
+                  <FaMapMarkedAlt aria-hidden="true" />
+                </span>
+                <p className="text-lg font-semibold text-slate-900">No destinations yet</p>
+                <p className="mt-2 text-slate-600">Add your first stop to start shaping the itinerary.</p>
               </div>
             ) : (
-              trip.destinations.map((destination) => (
-                <div key={destination.id} className="card surface-card rounded-2xl">
-                  <div className="card-body">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+              <div className="space-y-4">
+                {trip.destinations.map((destination) => (
+                  <article key={destination.id} className="surface-card p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <h3 className="card-title text-xl sm:text-2xl text-slate-900">{destination.name}</h3>
-                        <p className="text-sm opacity-70">
-                          {destination.city && `${destination.city}, `}{destination.country}
+                        <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">{destination.name}</h3>
+                        <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                          <FaMapMarkerAlt className="text-amber-600" aria-hidden="true" />
+                          <span>{destination.city && `${destination.city}, `}{destination.country}</span>
                         </p>
                       </div>
-                      <div className="flex w-full sm:w-auto gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:flex">
                         <button
                           onClick={() => {
-                            setSelectedDestination(destination.id);
                             setActivityForm({ ...activityForm, destinationId: destination.id });
                             setShowActivityModal(true);
                           }}
-                          className="btn btn-sm border-0 bg-cyan-600 hover:bg-cyan-700 text-white flex-1 sm:flex-none"
+                          className="btn btn-sm primary-action"
                         >
-                          <FaPlus /> Activity
+                          <FaPlus aria-hidden="true" />
+                          Activity
                         </button>
                         <button
                           onClick={() => handleDeleteDestination(destination.id)}
-                          className="btn btn-sm btn-ghost text-error flex-1 sm:flex-none"
+                          className="btn btn-sm quiet-action danger-action"
+                          aria-label={`Delete destination ${destination.name}`}
                         >
-                          <FaTrash />
+                          <FaTrash aria-hidden="true" />
                         </button>
                       </div>
                     </div>
 
                     {destination.description && (
-                      <p className="mt-2">{destination.description}</p>
+                      <p className="mt-3 text-slate-600">{destination.description}</p>
                     )}
 
-                    <div className="flex items-center mt-2 text-sm">
-                      <FaCalendarAlt className="mr-2" />
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                      <FaCalendarAlt className="text-cyan-700" aria-hidden="true" />
                       <span>{format(new Date(destination.arrivalDate), 'MMM dd, yyyy')}</span>
-                      <span className="mx-2">→</span>
+                      <FaArrowRight className="text-slate-400" aria-hidden="true" />
                       <span>{format(new Date(destination.departureDate), 'MMM dd, yyyy')}</span>
                     </div>
 
-                    {/* Activities for this destination */}
-                    {trip.destinations.find(d => d.id === destination.id) && (
-                      <div className="mt-4">
-                        <h4 className="font-semibold mb-2">Activities:</h4>
-                        <div className="space-y-2">
-                          {/* Since we don't have activities in the destination object, we'll fetch them */}
-                          {/* This is a simplified version - in production, you'd fetch activities per destination */}
-                          <p className="text-sm opacity-70">Add activities using the "+ Activity" button above</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
+                    <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
+                      <h4 className="font-semibold text-slate-900">Activities</h4>
+                      <p className="mt-1 text-sm text-slate-600">Add activities from this destination card.</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
             )}
-          </div>
+          </section>
         )}
 
-        {/* Budgets Tab */}
         {activeTab === 'budgets' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-              <h2 className="text-2xl font-black text-slate-900">Budget Breakdown</h2>
+          <section className="space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="page-kicker mb-2">Spending</p>
+                <h2 className="section-title">Budget Breakdown</h2>
+              </div>
               <button
                 onClick={() => setShowBudgetModal(true)}
-                className="btn border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white w-full sm:w-auto"
+                className="btn primary-action w-full sm:w-auto"
               >
-                <FaPlus className="mr-2" />
+                <FaPlus className="mr-2" aria-hidden="true" />
                 Add Budget Item
               </button>
             </div>
 
             {trip.budgets.length === 0 ? (
-              <div className="card surface-card rounded-2xl">
-                <div className="card-body text-center">
-                  <p className="text-lg">No budget items yet. Start planning your expenses!</p>
-                </div>
+              <div className="empty-state p-8 text-center">
+                <span className="icon-chip mx-auto mb-4 bg-emerald-50 text-emerald-700">
+                  <FaMoneyBillWave aria-hidden="true" />
+                </span>
+                <p className="text-lg font-semibold text-slate-900">No budget items yet</p>
+                <p className="mt-2 text-slate-600">Add planned expenses to see how the trip is tracking.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="table table-zebra bg-white rounded-xl border border-slate-200/80">
+              <div className="data-panel overflow-x-auto">
+                <table className="table">
                   <thead>
                     <tr>
                       <th>Category</th>
@@ -366,74 +418,74 @@ const TripDetail: React.FC = () => {
                       <th>Actual</th>
                       <th>Difference</th>
                       <th>Notes</th>
-                      <th>Actions</th>
+                      <th className="text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {trip.budgets.map((budget) => (
-                      <tr key={budget.id}>
-                        <td className="font-semibold">{budget.category}</td>
-                        <td>${budget.plannedAmount.toFixed(2)}</td>
-                        <td>${budget.actualAmount.toFixed(2)}</td>
-                        <td className={budget.actualAmount > budget.plannedAmount ? 'text-error' : 'text-success'}>
-                          ${(budget.plannedAmount - budget.actualAmount).toFixed(2)}
-                        </td>
-                        <td>{budget.notes || '-'}</td>
-                        <td>
-                          <button
-                            onClick={() => handleDeleteBudget(budget.id)}
-                            className="btn btn-sm btn-ghost text-error"
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {trip.budgets.map((budget) => {
+                      const difference = budget.plannedAmount - budget.actualAmount;
+
+                      return (
+                        <tr key={budget.id}>
+                          <td className="font-semibold">{budget.category}</td>
+                          <td>{currency(budget.plannedAmount)}</td>
+                          <td>{currency(budget.actualAmount)}</td>
+                          <td className={difference < 0 ? 'text-error' : 'text-success'}>{currency(difference)}</td>
+                          <td>{budget.notes || '-'}</td>
+                          <td className="text-right">
+                            <button
+                              onClick={() => handleDeleteBudget(budget.id)}
+                              className="btn btn-sm btn-ghost danger-action"
+                              aria-label={`Delete budget item ${budget.category}`}
+                            >
+                              <FaTrash aria-hidden="true" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                     <tr className="font-bold">
                       <td>TOTAL</td>
-                      <td>${getTotalBudget().toFixed(2)}</td>
-                      <td>${getTotalSpent().toFixed(2)}</td>
-                      <td className={getTotalSpent() > getTotalBudget() ? 'text-error' : 'text-success'}>
-                        ${(getTotalBudget() - getTotalSpent()).toFixed(2)}
-                      </td>
+                      <td>{currency(totalBudget)}</td>
+                      <td>{currency(totalSpent)}</td>
+                      <td className={remainingBudget < 0 ? 'text-error' : 'text-success'}>{currency(remainingBudget)}</td>
                       <td colSpan={2}></td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             )}
-          </div>
+          </section>
         )}
       </div>
 
-      {/* Destination Modal */}
       {showDestinationModal && (
         <dialog className="modal modal-open">
-          <form method="dialog" className="modal-box surface-card border border-slate-200/80 max-w-2xl" onSubmit={handleCreateDestination}>
-            <h3 className="font-bold text-lg mb-4">Add Destination</h3>
+          <form className="modal-box modal-panel max-w-2xl" onSubmit={handleCreateDestination}>
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Add Destination</h3>
 
             <div className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Destination Name *</span>
+                  <span className="label-text font-semibold text-slate-700">Destination Name *</span>
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered field-control"
                   value={destinationForm.name}
                   onChange={(e) => setDestinationForm({ ...destinationForm, name: e.target.value })}
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Country *</span>
+                    <span className="label-text font-semibold text-slate-700">Country *</span>
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={destinationForm.country}
                     onChange={(e) => setDestinationForm({ ...destinationForm, country: e.target.value })}
                     required
@@ -442,11 +494,11 @@ const TripDetail: React.FC = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">City</span>
+                    <span className="label-text font-semibold text-slate-700">City</span>
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={destinationForm.city}
                     onChange={(e) => setDestinationForm({ ...destinationForm, city: e.target.value })}
                   />
@@ -455,23 +507,23 @@ const TripDetail: React.FC = () => {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Description</span>
+                  <span className="label-text font-semibold text-slate-700">Description</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered"
+                  className="textarea textarea-bordered field-control"
                   value={destinationForm.description}
                   onChange={(e) => setDestinationForm({ ...destinationForm, description: e.target.value })}
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Arrival Date *</span>
+                    <span className="label-text font-semibold text-slate-700">Arrival Date *</span>
                   </label>
                   <input
                     type="date"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={destinationForm.arrivalDate}
                     onChange={(e) => setDestinationForm({ ...destinationForm, arrivalDate: e.target.value })}
                     required
@@ -480,11 +532,11 @@ const TripDetail: React.FC = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Departure Date *</span>
+                    <span className="label-text font-semibold text-slate-700">Departure Date *</span>
                   </label>
                   <input
                     type="date"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={destinationForm.departureDate}
                     onChange={(e) => setDestinationForm({ ...destinationForm, departureDate: e.target.value })}
                     required
@@ -494,10 +546,10 @@ const TripDetail: React.FC = () => {
             </div>
 
             <div className="modal-action">
-              <button type="button" className="btn" onClick={() => setShowDestinationModal(false)}>
+              <button type="button" className="btn quiet-action" onClick={() => setShowDestinationModal(false)}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn primary-action">
                 Add Destination
               </button>
             </div>
@@ -505,20 +557,19 @@ const TripDetail: React.FC = () => {
         </dialog>
       )}
 
-      {/* Activity Modal */}
       {showActivityModal && (
         <dialog className="modal modal-open">
-          <form method="dialog" className="modal-box surface-card border border-slate-200/80 max-w-2xl" onSubmit={handleCreateActivity}>
-            <h3 className="font-bold text-lg mb-4">Add Activity</h3>
+          <form className="modal-box modal-panel max-w-2xl" onSubmit={handleCreateActivity}>
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Add Activity</h3>
 
             <div className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Activity Name *</span>
+                  <span className="label-text font-semibold text-slate-700">Activity Name *</span>
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered field-control"
                   value={activityForm.name}
                   onChange={(e) => setActivityForm({ ...activityForm, name: e.target.value })}
                   required
@@ -527,23 +578,23 @@ const TripDetail: React.FC = () => {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Description</span>
+                  <span className="label-text font-semibold text-slate-700">Description</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered"
+                  className="textarea textarea-bordered field-control"
                   value={activityForm.description}
                   onChange={(e) => setActivityForm({ ...activityForm, description: e.target.value })}
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Date & Time *</span>
+                    <span className="label-text font-semibold text-slate-700">Date & Time *</span>
                   </label>
                   <input
                     type="datetime-local"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={activityForm.scheduledDateTime}
                     onChange={(e) => setActivityForm({ ...activityForm, scheduledDateTime: e.target.value })}
                     required
@@ -552,25 +603,25 @@ const TripDetail: React.FC = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Duration (minutes)</span>
+                    <span className="label-text font-semibold text-slate-700">Duration (minutes)</span>
                   </label>
                   <input
                     type="number"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={activityForm.durationMinutes}
-                    onChange={(e) => setActivityForm({ ...activityForm, durationMinutes: parseInt(e.target.value) })}
+                    onChange={(e) => setActivityForm({ ...activityForm, durationMinutes: toNumber(e.target.value) })}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Location</span>
+                    <span className="label-text font-semibold text-slate-700">Location</span>
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={activityForm.location}
                     onChange={(e) => setActivityForm({ ...activityForm, location: e.target.value })}
                   />
@@ -578,24 +629,24 @@ const TripDetail: React.FC = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Estimated Cost ($)</span>
+                    <span className="label-text font-semibold text-slate-700">Estimated Cost ($)</span>
                   </label>
                   <input
                     type="number"
                     step="0.01"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={activityForm.estimatedCost}
-                    onChange={(e) => setActivityForm({ ...activityForm, estimatedCost: parseFloat(e.target.value) })}
+                    onChange={(e) => setActivityForm({ ...activityForm, estimatedCost: toNumber(e.target.value) })}
                   />
                 </div>
               </div>
             </div>
 
             <div className="modal-action">
-              <button type="button" className="btn" onClick={() => setShowActivityModal(false)}>
+              <button type="button" className="btn quiet-action" onClick={() => setShowActivityModal(false)}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn primary-action">
                 Add Activity
               </button>
             </div>
@@ -603,19 +654,18 @@ const TripDetail: React.FC = () => {
         </dialog>
       )}
 
-      {/* Budget Modal */}
       {showBudgetModal && (
         <dialog className="modal modal-open">
-          <form method="dialog" className="modal-box surface-card border border-slate-200/80 max-w-2xl" onSubmit={handleCreateBudget}>
-            <h3 className="font-bold text-lg mb-4">Add Budget Item</h3>
+          <form className="modal-box modal-panel max-w-2xl" onSubmit={handleCreateBudget}>
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Add Budget Item</h3>
 
             <div className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Category *</span>
+                  <span className="label-text font-semibold text-slate-700">Category *</span>
                 </label>
                 <select
-                  className="select select-bordered"
+                  className="select select-bordered field-control"
                   value={budgetForm.category}
                   onChange={(e) => setBudgetForm({ ...budgetForm, category: e.target.value })}
                   required
@@ -630,41 +680,41 @@ const TripDetail: React.FC = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Planned Amount ($) *</span>
+                    <span className="label-text font-semibold text-slate-700">Planned Amount ($) *</span>
                   </label>
                   <input
                     type="number"
                     step="0.01"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={budgetForm.plannedAmount}
-                    onChange={(e) => setBudgetForm({ ...budgetForm, plannedAmount: parseFloat(e.target.value) })}
+                    onChange={(e) => setBudgetForm({ ...budgetForm, plannedAmount: toNumber(e.target.value) })}
                     required
                   />
                 </div>
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Actual Amount ($)</span>
+                    <span className="label-text font-semibold text-slate-700">Actual Amount ($)</span>
                   </label>
                   <input
                     type="number"
                     step="0.01"
-                    className="input input-bordered"
+                    className="input input-bordered field-control"
                     value={budgetForm.actualAmount}
-                    onChange={(e) => setBudgetForm({ ...budgetForm, actualAmount: parseFloat(e.target.value) })}
+                    onChange={(e) => setBudgetForm({ ...budgetForm, actualAmount: toNumber(e.target.value) })}
                   />
                 </div>
               </div>
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Notes</span>
+                  <span className="label-text font-semibold text-slate-700">Notes</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered"
+                  className="textarea textarea-bordered field-control"
                   value={budgetForm.notes}
                   onChange={(e) => setBudgetForm({ ...budgetForm, notes: e.target.value })}
                 />
@@ -672,10 +722,10 @@ const TripDetail: React.FC = () => {
             </div>
 
             <div className="modal-action">
-              <button type="button" className="btn" onClick={() => setShowBudgetModal(false)}>
+              <button type="button" className="btn quiet-action" onClick={() => setShowBudgetModal(false)}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn primary-action">
                 Add Budget
               </button>
             </div>
@@ -686,4 +736,4 @@ const TripDetail: React.FC = () => {
   );
 };
 
-export default TripDetail;
+export default TripDetailPage;
