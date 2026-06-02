@@ -19,3 +19,15 @@ docker rm reactui-dev
 
 ### Auto update changed code
 docker compose --profile development up --build reactui-dev
+
+## Full stack with PostgreSQL
+
+### Run production-like stack (.NET API + React UI + PostgreSQL)
+docker compose -f docker-compose.postgres.full-stack.yml up --build
+
+### Run development API (hot reload) + PostgreSQL
+docker compose -f docker-compose.postgres.full-stack.yml --profile development up --build api-dev reactui
+
+### Optional: use custom PostgreSQL password
+$env:POSTGRES_PASSWORD="YourStrongPostgresPassword"
+docker compose -f docker-compose.postgres.full-stack.yml up --build

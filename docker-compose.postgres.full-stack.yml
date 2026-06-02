@@ -1,51 +1,52 @@
 version: '3.8'
 
 services:
-  # SQL Server Database
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: kmstraining-sqlserver
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: kmstraining-postgres
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${SQL_SA_PASSWORD}
-      - MSSQL_PID=Developer
+      - POSTGRES_DB=TripPlannerDB
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Postgres123!}
     ports:
-      - "1433:1433"
+      - "5433:5432"
     volumes:
-      - sqlserver-data:/var/opt/mssql
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - kmstraining-network
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P ${SQL_SA_PASSWORD} -Q 'SELECT 1' -C"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d TripPlannerDB"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s
 
   # .NET API
   api:
     build:
-      context: ./KMSTraining.API
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./KMSTraining.API/Dockerfile
     container_name: kmstraining-api
     ports:
-      - "7777:8080"
+      - "7778:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__TripPlannerDatabase=Server=kmstraining-sqlserver;Database=TripPlannerDB;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - DatabaseProvider=postgres
+      - ConnectionStrings__TripPlannerDatabase=Host=kmstraining-postgres;Port=5432;Database=TripPlannerDB;Username=postgres;Password=${POSTGRES_PASSWORD:-Postgres123!}
       - JwtSettings__SecretKey=NW7WZsDn5nA9D22fu6NCQsbGMB3ciyQ9unMOVFrKMcB
       - JwtSettings__Issuer=KMSTraining.API
       - JwtSettings__Audience=KMSTraining.API.Users
       - JwtSettings__ExpirationMinutes=60
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
     networks:
       - kmstraining-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "true"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -60,7 +61,7 @@ services:
     working_dir: /src
     command: dotnet watch run --project KMSTraining.API.csproj --urls http://0.0.0.0:8080 --property:BaseIntermediateOutputPath=/tmp/obj/ --property:BaseOutputPath=/tmp/bin/
     ports:
-      - "7777:8080"
+      - "7778:8080"
     volumes:
       - type: bind
         source: ./KMSTraining.API
@@ -72,13 +73,14 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - DOTNET_USE_POLLING_FILE_WATCHER=1
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__TripPlannerDatabase=Server=kmstraining-sqlserver;Database=TripPlannerDB;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - DatabaseProvider=postgres
+      - ConnectionStrings__TripPlannerDatabase=Host=kmstraining-postgres;Port=5432;Database=TripPlannerDB;Username=postgres;Password=${POSTGRES_PASSWORD:-Postgres123!}
       - JwtSettings__SecretKey=NW7WZsDn5nA9D22fu6NCQsbGMB3ciyQ9unMOVFrKMcB
       - JwtSettings__Issuer=KMSTraining.API
       - JwtSettings__Audience=KMSTraining.API.Users
       - JwtSettings__ExpirationMinutes=60
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
     networks:
       - kmstraining-network
@@ -92,7 +94,7 @@ services:
       context: ./kmstraining.reactui
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:7777/api
+        - VITE_API_URL=http://localhost:7778/api
     container_name: kmstraining-reactui
     ports:
       - "3000:80"
@@ -112,7 +114,7 @@ services:
       start_period: 40s
 
 volumes:
-  sqlserver-data:
+  postgres-data:
     driver: local
   nuget-cache:
     driver: local

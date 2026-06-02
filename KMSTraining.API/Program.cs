@@ -7,18 +7,40 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var databaseProvider = (builder.Configuration["DatabaseProvider"] ?? "sqlserver").Trim().ToLowerInvariant();
+var connectionString = builder.Configuration.GetConnectionString("TripPlannerDatabase")
+    ?? throw new InvalidOperationException("Connection string 'TripPlannerDatabase' is not configured.");
+
 // Add DbContext
 builder.Services.AddDbContext<TripPlannerDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("TripPlannerDatabase"),
-        sqlOptions =>
-        {
-            sqlOptions.CommandTimeout(60);
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(10),
-                errorNumbersToAdd: null);
-        }));
+{
+    if (databaseProvider is "postgres" or "postgresql")
+    {
+        options.UseNpgsql(
+            connectionString,
+            npgsqlOptions =>
+            {
+                npgsqlOptions.CommandTimeout(60);
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorCodesToAdd: null);
+            });
+    }
+    else
+    {
+        options.UseSqlServer(
+            connectionString,
+            sqlOptions =>
+            {
+                sqlOptions.CommandTimeout(60);
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null);
+            });
+    }
+});
 
 // Add Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -77,7 +99,15 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<TripPlannerDbContext>();
-    dbContext.Database.Migrate();
+    if (databaseProvider is "postgres" or "postgresql")
+    {
+        // For local Postgres option, create schema directly from model.
+        dbContext.Database.EnsureCreated();
+    }
+    else
+    {
+        dbContext.Database.Migrate();
+    }
 }
 
 // Configure the HTTP request pipeline.

@@ -141,7 +141,7 @@ public class DestinationsControllerTests
         var okResult = result.Result as OkObjectResult;
         var destinations = okResult!.Value as IEnumerable<DestinationDto>;
         Assert.That(destinations!.Count(), Is.EqualTo(1));
-        Assert.That(destinations.First().Name, Is.EqualTo("Paris"));
+        Assert.That(destinations?.First().Name, Is.EqualTo("Paris"));
     }
 
     [Test]

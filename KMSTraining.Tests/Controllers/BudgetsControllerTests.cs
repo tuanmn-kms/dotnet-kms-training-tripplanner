@@ -135,7 +135,7 @@ public class BudgetsControllerTests
         var okResult = result.Result as OkObjectResult;
         var budgets = okResult!.Value as IEnumerable<BudgetDto>;
         Assert.That(budgets!.Count(), Is.EqualTo(1));
-        Assert.That(budgets.First().Category, Is.EqualTo("Accommodation"));
+        Assert.That(budgets?.First().Category, Is.EqualTo("Accommodation"));
     }
 
     [Test]
