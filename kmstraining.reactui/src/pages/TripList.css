@@ -1,0 +1,93 @@
+.trip-list-page {
+  --trip-border: hsl(var(--b3) / 0.72);
+  --trip-border-muted: hsl(var(--b3) / 0.62);
+  --trip-hover-shadow: 0 18px 32px -20px rgb(15 23 42 / 0.55);
+  --trip-space-sm: 0.5rem;
+  --trip-space-md: 0.75rem;
+  --trip-space-lg: 1rem;
+
+  padding-inline: 0;
+}
+
+.trip-list-header {
+  margin-bottom: var(--trip-space-sm);
+}
+
+.trip-list-title-wrap p {
+  letter-spacing: 0.01em;
+}
+
+.trip-new-btn {
+  width: 100%;
+  min-width: 100%;
+}
+
+.trip-grid {
+  align-items: stretch;
+}
+
+.trip-card {
+  border: 1px solid var(--trip-border);
+  border-radius: 0.875rem;
+}
+
+.trip-card-body {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-date-row {
+  border-top: 1px dashed var(--trip-border);
+  padding-top: var(--trip-space-md);
+}
+
+.trip-card-actions {
+  margin-top: auto;
+}
+
+.trip-card-actions .btn {
+  justify-content: flex-start;
+}
+
+.trip-empty-state {
+  border: 1px solid var(--trip-border-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .trip-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--trip-hover-shadow);
+  }
+}
+
+@media (min-width: 640px) {
+  .trip-list-page {
+    padding-inline: 0.25rem;
+  }
+
+  .trip-list-header {
+    margin-bottom: 0.25rem;
+  }
+
+  .trip-new-btn {
+    width: auto;
+    min-width: 9.5rem;
+  }
+
+  .trip-card-actions .btn {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .trip-list-page {
+    padding-inline: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-card {
+    transition: none;
+  }
+}

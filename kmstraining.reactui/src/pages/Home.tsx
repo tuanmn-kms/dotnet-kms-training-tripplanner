@@ -8,220 +8,108 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section with Gradient */}
-      <div className="hero min-h-[700px] bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
-        <div className="hero-content text-center text-white z-10 max-w-6xl">
-          <div>
-            <div className="flex justify-center mb-6">
-              <FaPlane className="text-9xl drop-shadow-2xl animate-pulse" />
+      <header className="page-container pt-4 sm:pt-6">
+        <div className="navbar bg-white/80 backdrop-blur-lg rounded-2xl border border-slate-200/70 px-3 sm:px-5">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 font-black text-slate-800 tracking-tight text-base sm:text-lg">
+              <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+                <FaPlane />
+              </span>
+              KMS Trip Planner
             </div>
-            <h1 className="text-7xl font-extrabold mb-6 drop-shadow-lg">
-              Your Dream Trip Starts Here
-            </h1>
-            <p className="text-2xl mb-8 font-light max-w-3xl mx-auto leading-relaxed">
-              Plan, organize, and manage your perfect journey with our all-in-one trip planning platform.
-              From destinations to budgets, we've got you covered.
-            </p>
-            {!isAuthenticated ? (
-              <div className="flex gap-4 justify-center flex-wrap">
-                <Link to="/register" className="btn btn-lg bg-white text-purple-600 hover:bg-gray-100 border-0 shadow-xl">
-                  <FaRocket className="mr-2" />
-                  Start Planning Free
-                </Link>
-                <Link to="/login" className="btn btn-lg btn-outline border-white text-white hover:bg-white hover:text-purple-600">
-                  Sign In
-                </Link>
-              </div>
-            ) : (
-              <Link to="/trips" className="btn btn-lg bg-white text-purple-600 hover:bg-gray-100 border-0 shadow-xl">
-                <FaMapMarkedAlt className="mr-2" />
-                View My Trips
-              </Link>
-            )}
+          </div>
+          <div className="flex-none gap-2">
+            <Link to="/login" className="btn btn-sm sm:btn-md border-0 bg-slate-100 text-slate-700 hover:bg-slate-200">Login</Link>
+            <Link to="/register" className="btn btn-sm sm:btn-md border-0 bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600">Get Started</Link>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Stats Section */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 py-16">
-        <div className="container mx-auto px-4">
-          <div className="stats stats-vertical lg:stats-horizontal shadow-lg w-full bg-white">
-            <div className="stat place-items-center">
-              <div className="stat-figure text-primary">
-                <FaUsers className="text-5xl" />
-              </div>
-              <div className="stat-title">Active Travelers</div>
-              <div className="stat-value text-primary">10K+</div>
-              <div className="stat-desc">Planning amazing trips</div>
-            </div>
+      <section className="page-container py-8 sm:py-16">
+        <div className="surface-card rounded-3xl p-6 sm:p-10 lg:p-14 relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-cyan-200/35 blur-3xl"></div>
+          <div className="absolute -bottom-16 -left-8 w-52 h-52 rounded-full bg-amber-200/35 blur-3xl"></div>
 
-            <div className="stat place-items-center">
-              <div className="stat-figure text-secondary">
-                <FaGlobe className="text-5xl" />
-              </div>
-              <div className="stat-title">Destinations</div>
-              <div className="stat-value text-secondary">150+</div>
-              <div className="stat-desc">Countries covered</div>
-            </div>
-
-            <div className="stat place-items-center">
-              <div className="stat-figure text-accent">
-                <FaStar className="text-5xl" />
-              </div>
-              <div className="stat-title">Trips Planned</div>
-              <div className="stat-value text-accent">50K+</div>
-              <div className="stat-desc">And counting</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <div className="py-24 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Powerful Features
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Everything you need to plan the perfect trip, all in one place
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Feature 1 */}
-            <div className="card bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-              <figure className="px-10 pt-10">
-                <div className="bg-blue-500 p-6 rounded-full">
-                  <FaMapMarkedAlt className="text-5xl text-white" />
-                </div>
-              </figure>
-              <div className="card-body items-center text-center">
-                <h3 className="card-title text-2xl text-blue-700">Plan Destinations</h3>
-                <p className="text-gray-700">
-                  Add multiple destinations with dates, create your perfect itinerary
-                </p>
+          <div className="relative z-10 grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <p className="badge border-0 bg-teal-100 text-teal-700 mb-4">Smart Planning Platform</p>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-slate-900">
+                Plan Better.
+                <span className="heading-gradient block">Travel Smarter.</span>
+              </h1>
+              <p className="mt-4 text-slate-600 text-base sm:text-lg max-w-xl">
+                Build trips with destinations, activities, and budgets in one focused workspace designed for modern travelers.
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                {!isAuthenticated ? (
+                  <>
+                    <Link to="/register" className="btn btn-md sm:btn-lg border-0 bg-slate-900 text-white hover:bg-slate-800 w-full sm:w-auto">
+                      <FaRocket className="mr-2" />
+                      Start Free
+                    </Link>
+                    <Link to="/login" className="btn btn-md sm:btn-lg border-slate-300 text-slate-700 bg-white/70 hover:bg-slate-100 w-full sm:w-auto">
+                      Sign In
+                    </Link>
+                  </>
+                ) : (
+                  <Link to="/trips" className="btn btn-md sm:btn-lg border-0 bg-slate-900 text-white hover:bg-slate-800 w-full sm:w-auto">
+                    <FaMapMarkedAlt className="mr-2" />
+                    Open My Trips
+                  </Link>
+                )}
               </div>
             </div>
 
-            {/* Feature 2 */}
-            <div className="card bg-gradient-to-br from-purple-50 to-purple-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-              <figure className="px-10 pt-10">
-                <div className="bg-purple-500 p-6 rounded-full">
-                  <FaCalendarCheck className="text-5xl text-white" />
-                </div>
-              </figure>
-              <div className="card-body items-center text-center">
-                <h3 className="card-title text-2xl text-purple-700">Schedule Activities</h3>
-                <p className="text-gray-700">
-                  Detailed itineraries with activities, times, and locations
-                </p>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="surface-card rounded-2xl p-4 sm:p-5">
+                <FaUsers className="text-teal-600 text-2xl mb-3" />
+                <p className="text-2xl sm:text-3xl font-black text-slate-900">10K+</p>
+                <p className="text-sm text-slate-600">Active planners</p>
               </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="card bg-gradient-to-br from-pink-50 to-pink-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-              <figure className="px-10 pt-10">
-                <div className="bg-pink-500 p-6 rounded-full">
-                  <FaMoneyBillWave className="text-5xl text-white" />
-                </div>
-              </figure>
-              <div className="card-body items-center text-center">
-                <h3 className="card-title text-2xl text-pink-700">Track Budgets</h3>
-                <p className="text-gray-700">
-                  Monitor spending, set budgets, stay within your limits
-                </p>
+              <div className="surface-card rounded-2xl p-4 sm:p-5">
+                <FaGlobe className="text-cyan-600 text-2xl mb-3" />
+                <p className="text-2xl sm:text-3xl font-black text-slate-900">150+</p>
+                <p className="text-sm text-slate-600">Countries</p>
               </div>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="card bg-gradient-to-br from-green-50 to-green-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-              <figure className="px-10 pt-10">
-                <div className="bg-green-500 p-6 rounded-full">
-                  <FaPlane className="text-5xl text-white" />
-                </div>
-              </figure>
-              <div className="card-body items-center text-center">
-                <h3 className="card-title text-2xl text-green-700">Trip Status</h3>
-                <p className="text-gray-700">
-                  Track progress from planning to completion
-                </p>
+              <div className="surface-card rounded-2xl p-4 sm:p-5">
+                <FaStar className="text-amber-500 text-2xl mb-3" />
+                <p className="text-2xl sm:text-3xl font-black text-slate-900">50K+</p>
+                <p className="text-sm text-slate-600">Trips created</p>
+              </div>
+              <div className="surface-card rounded-2xl p-4 sm:p-5">
+                <FaMoneyBillWave className="text-emerald-600 text-2xl mb-3" />
+                <p className="text-2xl sm:text-3xl font-black text-slate-900">100%</p>
+                <p className="text-sm text-slate-600">Budget visibility</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* How It Works */}
-      <div className="bg-gradient-to-br from-purple-100 to-pink-100 py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-4 text-purple-800">How It Works</h2>
-            <p className="text-xl text-gray-700">Simple steps to plan your perfect trip</p>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <ul className="steps steps-vertical lg:steps-horizontal w-full">
-              <li className="step step-primary">
-                <div className="text-left mt-4">
-                  <div className="badge badge-lg badge-primary mb-2">Step 1</div>
-                  <h3 className="font-bold text-xl mb-2">Create a Trip</h3>
-                  <p className="text-gray-600">Set your trip name, dates, and description</p>
-                </div>
-              </li>
-              <li className="step step-primary">
-                <div className="text-left mt-4">
-                  <div className="badge badge-lg badge-primary mb-2">Step 2</div>
-                  <h3 className="font-bold text-xl mb-2">Add Destinations</h3>
-                  <p className="text-gray-600">Plan where you want to go and when</p>
-                </div>
-              </li>
-              <li className="step step-primary">
-                <div className="text-left mt-4">
-                  <div className="badge badge-lg badge-primary mb-2">Step 3</div>
-                  <h3 className="font-bold text-xl mb-2">Schedule Activities</h3>
-                  <p className="text-gray-600">Fill your days with amazing experiences</p>
-                </div>
-              </li>
-              <li className="step step-primary">
-                <div className="text-left mt-4">
-                  <div className="badge badge-lg badge-primary mb-2">Step 4</div>
-                  <h3 className="font-bold text-xl mb-2">Track Budget</h3>
-                  <p className="text-gray-600">Monitor your spending and stay on budget</p>
-                </div>
-              </li>
-            </ul>
-          </div>
+      <section className="page-container pb-10 sm:pb-16">
+        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mb-6 sm:mb-8">What You Can Do</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <article className="surface-card rounded-2xl p-5 sm:p-6">
+            <FaMapMarkedAlt className="text-cyan-600 text-3xl mb-4" />
+            <h3 className="text-xl font-bold text-slate-900">Destination Mapping</h3>
+            <p className="text-slate-600 mt-2">Organize countries and cities in a clean timeline for each trip.</p>
+          </article>
+          <article className="surface-card rounded-2xl p-5 sm:p-6">
+            <FaCalendarCheck className="text-teal-600 text-3xl mb-4" />
+            <h3 className="text-xl font-bold text-slate-900">Activity Scheduling</h3>
+            <p className="text-slate-600 mt-2">Plan every day with activities and time windows you can edit fast.</p>
+          </article>
+          <article className="surface-card rounded-2xl p-5 sm:p-6">
+            <FaMoneyBillWave className="text-amber-600 text-3xl mb-4" />
+            <h3 className="text-xl font-bold text-slate-900">Budget Control</h3>
+            <p className="text-slate-600 mt-2">Track planned vs actual costs by category before spending surprises hit.</p>
+          </article>
         </div>
-      </div>
+      </section>
 
-      {/* CTA Section */}
-      {!isAuthenticated && (
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 py-20">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-5xl font-bold text-white mb-6">Ready to Start Planning?</h2>
-            <p className="text-2xl text-white mb-8 opacity-90">
-              Join thousands of travelers organizing their dream trips
-            </p>
-            <Link 
-              to="/register" 
-              className="btn btn-lg bg-white text-purple-600 hover:bg-gray-100 border-0 shadow-xl text-xl px-12"
-            >
-              <FaRocket className="mr-2" />
-              Get Started Now - It's Free
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <footer className="footer footer-center p-10 bg-base-200 text-base-content">
-        <div>
-          <FaPlane className="text-5xl text-primary mb-4" />
-          <p className="font-bold text-2xl">KMS Trip Planner</p>
-          <p className="text-lg">Your journey to amazing adventures starts here</p>
-          <p className="text-sm opacity-70">Copyright © 2026 - All rights reserved</p>
+      <footer className="border-t border-slate-200/70 bg-white/70">
+        <div className="page-container py-6 sm:py-8 text-center text-sm sm:text-base text-slate-600">
+          Copyright © 2026 - KMS Trip Planner. All rights reserved.
         </div>
       </footer>
     </div>

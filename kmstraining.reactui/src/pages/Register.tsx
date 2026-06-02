@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import authService, { RegisterDto } from '../services/authService';
-import { FaPlane, FaUser, FaEnvelope, FaLock, FaUserPlus, FaUserCircle } from 'react-icons/fa';
+import { FaPlane } from 'react-icons/fa';
 
 const getRegisterErrorMessage = (err: any): string => {
   const responseData = err?.response?.data;
@@ -23,7 +23,7 @@ const getRegisterErrorMessage = (err: any): string => {
   }
 
   if (err?.code === 'ERR_NETWORK') {
-    return 'Cannot reach the API server. Please make sure https://localhost:44391 is running.';
+    return 'Cannot reach the API server. Please make sure https://localhost:7777 is running.';
   }
 
   return 'Registration failed. Please try again.';
@@ -83,128 +83,125 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-500 via-blue-500 to-purple-500 p-4">
-      <div className="hero-content flex-col lg:flex-row-reverse">
-        <div className="text-center lg:text-left lg:ml-8">
-          <h1 className="text-5xl font-bold flex items-center justify-center lg:justify-start">
-            <FaPlane className="mr-4 text-primary" />
-            Trip Planner
-          </h1>
-          <p className="py-6">
-            Join us today and start planning your dream adventures!
-          </p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-2xl surface-card rounded-3xl p-6 sm:p-8">
+        <div className="text-center mb-6">
+          <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-teal-100 text-teal-700 mb-3">
+            <FaPlane className="text-xl" />
+          </span>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900">Create Your Account</h1>
+          <p className="text-slate-600 mt-2">Start building your travel plans in minutes.</p>
         </div>
-        <div className="card flex-shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
-          <form className="card-body" onSubmit={handleSubmit}>
-            <h2 className="text-2xl font-bold text-center mb-4">Sign Up</h2>
 
-            {error && (
-              <div className="alert alert-error">
-                <span>{error}</span>
-              </div>
-            )}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Sign Up</h2>
 
+          {error && (
+            <div className="alert alert-error">
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text text-slate-700">Username *</span>
+            </label>
+            <input
+              type="text"
+              name="username"
+              placeholder="Choose a username"
+              className="input input-bordered border-slate-200"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text text-slate-700">Email *</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              placeholder="your@email.com"
+              className="input input-bordered border-slate-200"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Username *</span>
+                <span className="label-text text-slate-700">First Name</span>
               </label>
               <input
                 type="text"
-                name="username"
-                placeholder="Choose a username"
-                className="input input-bordered"
-                value={formData.username}
+                name="firstName"
+                placeholder="John"
+                className="input input-bordered border-slate-200"
+                value={formData.firstName}
                 onChange={handleChange}
-                required
               />
             </div>
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Email *</span>
+                <span className="label-text text-slate-700">Last Name</span>
               </label>
               <input
-                type="email"
-                name="email"
-                placeholder="your@email.com"
-                className="input input-bordered"
-                value={formData.email}
+                type="text"
+                name="lastName"
+                placeholder="Doe"
+                className="input input-bordered border-slate-200"
+                value={formData.lastName}
                 onChange={handleChange}
-                required
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">First Name</span>
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  placeholder="John"
-                  className="input input-bordered"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                />
-              </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text text-slate-700">Password *</span>
+            </label>
+            <input
+              type="password"
+              name="password"
+              placeholder="Min 6 characters"
+              className="input input-bordered border-slate-200"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Last Name</span>
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  placeholder="Doe"
-                  className="input input-bordered"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text text-slate-700">Confirm Password *</span>
+            </label>
+            <input
+              type="password"
+              placeholder="Re-enter password"
+              className="input input-bordered border-slate-200"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Password *</span>
-              </label>
-              <input
-                type="password"
-                name="password"
-                placeholder="Min 6 characters"
-                className="input input-bordered"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-            </div>
+          <div className="form-control pt-2">
+            <button type="submit" className={`btn border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white ${loading ? 'loading' : ''}`} disabled={loading}>
+              {loading ? 'Creating account...' : 'Sign Up'}
+            </button>
+          </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Confirm Password *</span>
-              </label>
-              <input
-                type="password"
-                placeholder="Re-enter password"
-                className="input input-bordered"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-control mt-6">
-              <button type="submit" className={`btn btn-primary ${loading ? 'loading' : ''}`} disabled={loading}>
-                {loading ? 'Creating account...' : 'Sign Up'}
-              </button>
-            </div>
-
-            <div className="text-center mt-4">
-              <span className="text-sm">Already have an account? </span>
-              <Link to="/login" className="link link-primary text-sm">Login</Link>
-            </div>
-          </form>
-        </div>
+          <div className="text-center pt-2">
+            <span className="text-sm text-slate-600">Already have an account? </span>
+            <Link to="/login" className="link link-info text-sm">Login</Link>
+          </div>
+        </form>
       </div>
     </div>
   );

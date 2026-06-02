@@ -33,7 +33,6 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    debugger;
     setError('');
     setLoading(true);
 
@@ -58,109 +57,97 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-4">
-      <div className="max-w-md w-full">
-        {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full shadow-lg mb-4">
-            <FaPlane className="text-4xl text-purple-600" />
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Welcome Back! #</h1>
-          <p className="text-white text-lg opacity-90">Sign in to continue your journey</p>
-        </div>
-
-        {/* Login Card */}
-        <div className="card bg-white shadow-2xl">
-          <div className="card-body">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="alert alert-error shadow-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {/* Username/Email Field */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold text-lg">Username or Email</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaUser className="text-gray-400 text-xl" />
-                  </div>
-                  <input
-                    type="text"
-                    name="usernameOrEmail"
-                    value={formData.usernameOrEmail}
-                    onChange={handleChange}
-                    className="input input-bordered input-lg w-full pl-12 text-lg focus:ring-2 focus:ring-purple-500"
-                    placeholder="Enter your username or email"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold text-lg">Password</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaLock className="text-gray-400 text-xl" />
-                  </div>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="input input-bordered input-lg w-full pl-12 text-lg focus:ring-2 focus:ring-purple-500"
-                    placeholder="Enter your password"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="form-control mt-8">
-                <button 
-                  type="submit" 
-                  className={`btn btn-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg ${loading ? 'loading' : ''}`}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    'Signing in...'
-                  ) : (
-                    <>
-                      <FaSignInAlt className="mr-2" />
-                      Sign In
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-
-            {/* Divider */}
-            <div className="divider">OR</div>
-
-            {/* Register Link */}
-            <div className="text-center">
-              <p className="text-gray-600 text-lg">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-purple-600 hover:text-purple-800 font-semibold hover:underline">
-                  Create one now
-                </Link>
-              </p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md">
+        <div className="surface-card rounded-3xl p-6 sm:p-8">
+          <div className="text-center mb-7">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-cyan-100 rounded-full mb-4 text-cyan-700">
+              <FaPlane className="text-2xl" />
             </div>
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2">Welcome Back</h1>
+            <p className="text-slate-600">Sign in to continue planning your next trip.</p>
           </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="alert alert-error shadow-sm text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-semibold text-slate-700">Username or Email</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FaUser className="text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  name="usernameOrEmail"
+                  value={formData.usernameOrEmail}
+                  onChange={handleChange}
+                  className="input input-bordered w-full pl-11 border-slate-200 focus:border-cyan-500"
+                  placeholder="Enter your username or email"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-semibold text-slate-700">Password</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FaLock className="text-slate-400" />
+                </div>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="input input-bordered w-full pl-11 border-slate-200 focus:border-cyan-500"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-control pt-2">
+              <button
+                type="submit"
+                className={`btn border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white ${loading ? 'loading' : ''}`}
+                disabled={loading}
+              >
+                {loading ? (
+                  'Signing in...'
+                ) : (
+                  <>
+                    <FaSignInAlt className="mr-2" />
+                    Sign In
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="divider text-slate-400">OR</div>
+
+            <div className="text-center text-sm sm:text-base text-slate-600">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-cyan-700 hover:text-cyan-800 font-semibold">
+                Create one now
+              </Link>
+            </div>
+          </form>
         </div>
 
-        {/* Back to Home */}
-        <div className="text-center mt-6">
-          <Link to="/" className="text-white hover:text-gray-200 text-lg hover:underline">
+        <div className="text-center mt-5">
+          <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm sm:text-base">
             ← Back to Home
           </Link>
         </div>

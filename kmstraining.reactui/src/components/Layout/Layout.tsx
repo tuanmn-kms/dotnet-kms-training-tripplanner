@@ -7,15 +7,15 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-base-200">
+    <div className="min-h-screen">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <main className="page-container py-6 sm:py-8">
         {children}
       </main>
-      <footer className="footer footer-center p-4 bg-base-300 text-base-content mt-auto">
-        <aside>
-          <p>Copyright © 2024 - Trip Planner. All rights reserved.</p>
-        </aside>
+      <footer className="mt-8 border-t border-slate-200/70 bg-white/70 backdrop-blur">
+        <div className="page-container py-4 sm:py-5 text-center text-sm sm:text-base text-slate-600">
+          Copyright © 2026 - KMS Trip Planner. All rights reserved.
+        </div>
       </footer>
     </div>
   );

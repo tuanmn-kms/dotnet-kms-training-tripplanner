@@ -36,9 +36,12 @@ const TripForm: React.FC = () => {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Create New Trip</h1>
+        <div className="mb-5 sm:mb-7">
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900">Create New Trip</h1>
+          <p className="text-slate-600 mt-2">Set your destination, timeline, and travel notes.</p>
+        </div>
 
-        <div className="card bg-base-100 shadow-xl">
+        <div className="card surface-card rounded-3xl">
           <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
@@ -49,13 +52,13 @@ const TripForm: React.FC = () => {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Trip Name *</span>
+                  <span className="label-text text-slate-700">Trip Name *</span>
                 </label>
                 <input
                   type="text"
                   name="name"
                   placeholder="e.g., Summer Vacation 2024"
-                  className="input input-bordered"
+                  className="input input-bordered border-slate-200"
                   value={formData.name}
                   onChange={handleChange}
                   required
@@ -64,12 +67,12 @@ const TripForm: React.FC = () => {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Description</span>
+                  <span className="label-text text-slate-700">Description</span>
                 </label>
                 <textarea
                   name="description"
                   placeholder="Describe your trip..."
-                  className="textarea textarea-bordered h-24"
+                  className="textarea textarea-bordered border-slate-200 h-24"
                   value={formData.description}
                   onChange={handleChange}
                 />
@@ -78,12 +81,12 @@ const TripForm: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Start Date *</span>
+                    <span className="label-text text-slate-700">Start Date *</span>
                   </label>
                   <input
                     type="date"
                     name="startDate"
-                    className="input input-bordered"
+                    className="input input-bordered border-slate-200"
                     value={formData.startDate}
                     onChange={handleChange}
                     required
@@ -92,12 +95,12 @@ const TripForm: React.FC = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">End Date *</span>
+                    <span className="label-text text-slate-700">End Date *</span>
                   </label>
                   <input
                     type="date"
                     name="endDate"
-                    className="input input-bordered"
+                    className="input input-bordered border-slate-200"
                     value={formData.endDate}
                     onChange={handleChange}
                     required
@@ -105,17 +108,17 @@ const TripForm: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card-actions justify-end pt-4">
+              <div className="card-actions flex-col-reverse sm:flex-row justify-end pt-4 gap-2">
                 <button
                   type="button"
-                  className="btn btn-ghost"
+                  className="btn w-full sm:w-auto"
                   onClick={() => navigate('/trips')}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className={`btn btn-primary ${loading ? 'loading' : ''}`}
+                  className={`btn w-full sm:w-auto border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white ${loading ? 'loading' : ''}`}
                   disabled={loading}
                 >
                   {loading ? 'Creating...' : 'Create Trip'}

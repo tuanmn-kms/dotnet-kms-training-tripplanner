@@ -37,7 +37,7 @@ services:
         target: /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=https://localhost:44391/api
+      - VITE_API_URL=http://localhost:7777/api
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=1000
     restart: unless-stopped

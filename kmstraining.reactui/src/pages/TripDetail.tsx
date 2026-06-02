@@ -172,7 +172,7 @@ const TripDetail: React.FC = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-[320px] sm:min-h-[400px]">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
       </Layout>
@@ -191,16 +191,16 @@ const TripDetail: React.FC = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-6xl mx-auto">
         {/* Trip Header */}
-        <div className="card bg-base-100 shadow-xl">
+        <div className="card surface-card rounded-3xl">
           <div className="card-body">
-            <div className="flex justify-between items-start">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{trip.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">{trip.name}</h1>
                 <span className={getStatusBadge(trip.status)}>{trip.status}</span>
               </div>
-              <Link to={`/trips/${trip.id}/edit`} className="btn btn-ghost">
+              <Link to={`/trips/${trip.id}/edit`} className="btn btn-sm sm:btn-md border-0 bg-slate-100 text-slate-700 hover:bg-cyan-100 w-full sm:w-auto">
                 <FaEdit /> Edit
               </Link>
             </div>
@@ -209,7 +209,7 @@ const TripDetail: React.FC = () => {
               <p className="text-lg mt-4">{trip.description}</p>
             )}
 
-            <div className="flex items-center mt-4 text-lg">
+            <div className="flex flex-wrap items-center mt-4 text-sm sm:text-base text-slate-700">
               <FaCalendarAlt className="mr-2 text-primary" />
               <span>{format(new Date(trip.startDate), 'MMM dd, yyyy')}</span>
               <span className="mx-3">→</span>
@@ -217,7 +217,7 @@ const TripDetail: React.FC = () => {
             </div>
 
             {/* Stats */}
-            <div className="stats stats-vertical lg:stats-horizontal shadow mt-6">
+            <div className="stats stats-vertical lg:stats-horizontal bg-white/80 border border-slate-200/80 shadow mt-6">
               <div className="stat">
                 <div className="stat-figure text-primary">
                   <FaMapMarkedAlt className="text-3xl" />
@@ -239,7 +239,7 @@ const TripDetail: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="tabs tabs-boxed bg-base-100 shadow">
+        <div className="tabs tabs-boxed bg-white/85 border border-slate-200/80 shadow">
           <a
             className={`tab tab-lg ${activeTab === 'destinations' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('destinations')}
@@ -259,11 +259,11 @@ const TripDetail: React.FC = () => {
         {/* Destinations Tab */}
         {activeTab === 'destinations' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Destinations</h2>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <h2 className="text-2xl font-black text-slate-900">Destinations</h2>
               <button
                 onClick={() => setShowDestinationModal(true)}
-                className="btn btn-primary"
+                className="btn border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white w-full sm:w-auto"
               >
                 <FaPlus className="mr-2" />
                 Add Destination
@@ -271,36 +271,36 @@ const TripDetail: React.FC = () => {
             </div>
 
             {trip.destinations.length === 0 ? (
-              <div className="card bg-base-100 shadow">
+              <div className="card surface-card rounded-2xl">
                 <div className="card-body text-center">
                   <p className="text-lg">No destinations yet. Add your first destination!</p>
                 </div>
               </div>
             ) : (
               trip.destinations.map((destination) => (
-                <div key={destination.id} className="card bg-base-100 shadow-xl">
+                <div key={destination.id} className="card surface-card rounded-2xl">
                   <div className="card-body">
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                       <div>
-                        <h3 className="card-title text-2xl">{destination.name}</h3>
+                        <h3 className="card-title text-xl sm:text-2xl text-slate-900">{destination.name}</h3>
                         <p className="text-sm opacity-70">
                           {destination.city && `${destination.city}, `}{destination.country}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex w-full sm:w-auto gap-2">
                         <button
                           onClick={() => {
                             setSelectedDestination(destination.id);
                             setActivityForm({ ...activityForm, destinationId: destination.id });
                             setShowActivityModal(true);
                           }}
-                          className="btn btn-sm btn-primary"
+                          className="btn btn-sm border-0 bg-cyan-600 hover:bg-cyan-700 text-white flex-1 sm:flex-none"
                         >
                           <FaPlus /> Activity
                         </button>
                         <button
                           onClick={() => handleDeleteDestination(destination.id)}
-                          className="btn btn-sm btn-ghost text-error"
+                          className="btn btn-sm btn-ghost text-error flex-1 sm:flex-none"
                         >
                           <FaTrash />
                         </button>
@@ -339,11 +339,11 @@ const TripDetail: React.FC = () => {
         {/* Budgets Tab */}
         {activeTab === 'budgets' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Budget Breakdown</h2>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <h2 className="text-2xl font-black text-slate-900">Budget Breakdown</h2>
               <button
                 onClick={() => setShowBudgetModal(true)}
-                className="btn btn-primary"
+                className="btn border-0 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white w-full sm:w-auto"
               >
                 <FaPlus className="mr-2" />
                 Add Budget Item
@@ -351,14 +351,14 @@ const TripDetail: React.FC = () => {
             </div>
 
             {trip.budgets.length === 0 ? (
-              <div className="card bg-base-100 shadow">
+              <div className="card surface-card rounded-2xl">
                 <div className="card-body text-center">
                   <p className="text-lg">No budget items yet. Start planning your expenses!</p>
                 </div>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="table table-zebra">
+                <table className="table table-zebra bg-white rounded-xl border border-slate-200/80">
                   <thead>
                     <tr>
                       <th>Category</th>
@@ -409,7 +409,7 @@ const TripDetail: React.FC = () => {
       {/* Destination Modal */}
       {showDestinationModal && (
         <dialog className="modal modal-open">
-          <form method="dialog" className="modal-box" onSubmit={handleCreateDestination}>
+          <form method="dialog" className="modal-box surface-card border border-slate-200/80 max-w-2xl" onSubmit={handleCreateDestination}>
             <h3 className="font-bold text-lg mb-4">Add Destination</h3>
 
             <div className="space-y-4">
@@ -426,7 +426,7 @@ const TripDetail: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Country *</span>
@@ -464,7 +464,7 @@ const TripDetail: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Arrival Date *</span>
@@ -508,7 +508,7 @@ const TripDetail: React.FC = () => {
       {/* Activity Modal */}
       {showActivityModal && (
         <dialog className="modal modal-open">
-          <form method="dialog" className="modal-box" onSubmit={handleCreateActivity}>
+          <form method="dialog" className="modal-box surface-card border border-slate-200/80 max-w-2xl" onSubmit={handleCreateActivity}>
             <h3 className="font-bold text-lg mb-4">Add Activity</h3>
 
             <div className="space-y-4">
@@ -536,7 +536,7 @@ const TripDetail: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Date & Time *</span>
@@ -563,7 +563,7 @@ const TripDetail: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Location</span>
@@ -606,7 +606,7 @@ const TripDetail: React.FC = () => {
       {/* Budget Modal */}
       {showBudgetModal && (
         <dialog className="modal modal-open">
-          <form method="dialog" className="modal-box" onSubmit={handleCreateBudget}>
+          <form method="dialog" className="modal-box surface-card border border-slate-200/80 max-w-2xl" onSubmit={handleCreateBudget}>
             <h3 className="font-bold text-lg mb-4">Add Budget Item</h3>
 
             <div className="space-y-4">
@@ -630,7 +630,7 @@ const TripDetail: React.FC = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Planned Amount ($) *</span>

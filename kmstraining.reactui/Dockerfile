@@ -8,7 +8,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Build argument for API URL
-ARG VITE_API_URL=http://localhost:32779/api
+ARG VITE_API_URL=http://localhost:7777/api
 ENV VITE_API_URL=$VITE_API_URL
 
 # Copy package files

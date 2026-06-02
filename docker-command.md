@@ -2,7 +2,7 @@
 cd kmstraining.reactui
 
 # Build image:
-docker build --build-arg VITE_API_URL=http://localhost:32779/api -t kmstraining-reactui:dev .
+docker build --build-arg VITE_API_URL=http://localhost:7777/api -t kmstraining-reactui:dev .
 
 # Run container:
 docker run -d --name reactui-dev -p 3888:80 kmstraining-reactui:dev

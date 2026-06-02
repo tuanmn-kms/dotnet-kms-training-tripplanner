@@ -13,41 +13,43 @@ import TripDetail from './pages/TripDetail';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+    <div data-theme="corporate" className="min-h-screen">
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          <Route path="/trips" element={
-            <PrivateRoute>
-              <TripList />
-            </PrivateRoute>
-          } />
+            <Route path="/trips" element={
+              <PrivateRoute>
+                <TripList />
+              </PrivateRoute>
+            } />
 
-          <Route path="/trips/new" element={
-            <PrivateRoute>
-              <TripForm />
-            </PrivateRoute>
-          } />
+            <Route path="/trips/new" element={
+              <PrivateRoute>
+                <TripForm />
+              </PrivateRoute>
+            } />
 
-          <Route path="/trips/:id" element={
-            <PrivateRoute>
-              <TripDetail />
-            </PrivateRoute>
-          } />
+            <Route path="/trips/:id" element={
+              <PrivateRoute>
+                <TripDetail />
+              </PrivateRoute>
+            } />
 
-          <Route path="/trips/:id/edit" element={
-            <PrivateRoute>
-              <TripForm />
-            </PrivateRoute>
-          } />
+            <Route path="/trips/:id/edit" element={
+              <PrivateRoute>
+                <TripForm />
+              </PrivateRoute>
+            } />
 
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </div>
   );
 }
 

@@ -60,12 +60,12 @@ const normalizeAuthResponse = (data: RawAuthResponse): AuthResponse => {
 
 const authService = {
   register: async (data: RegisterDto): Promise<AuthResponse> => {
-    const response = await api.post<RawAuthResponse>('https://localhost:44391/api/Auth/register', data);
+    const response = await api.post<RawAuthResponse>('Auth/register', data);
     return normalizeAuthResponse(response.data);
   },
 
   signIn: async (data: LoginDto): Promise<AuthResponse> => {
-    const response = await api.post<RawAuthResponse>('https://localhost:44391/api/Auth/login', data);
+    const response = await api.post<RawAuthResponse>('Auth/login', data);
     return normalizeAuthResponse(response.data);
   },
 
