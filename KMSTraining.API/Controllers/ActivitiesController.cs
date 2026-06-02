@@ -103,8 +103,8 @@ public class ActivitiesController : ControllerBase
             return NotFound(new { message = "Destination not found" });
         }
 
-        if (createActivityDto.ScheduledDateTime < destination.ArrivalDate || 
-            createActivityDto.ScheduledDateTime > destination.DepartureDate)
+        if (createActivityDto.ScheduledDateTime < destination.ArrivalDate
+            || createActivityDto.ScheduledDateTime > destination.DepartureDate)
         {
             return BadRequest(new { message = "Activity must be scheduled within destination dates" });
         }

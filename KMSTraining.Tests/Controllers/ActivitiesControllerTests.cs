@@ -150,7 +150,7 @@ public class ActivitiesControllerTests
         var okResult = result.Result as OkObjectResult;
         var activities = okResult!.Value as IEnumerable<ActivityDto>;
         Assert.That(activities!.Count(), Is.EqualTo(1));
-        Assert.That(activities.First().Name, Is.EqualTo("Eiffel Tower"));
+        Assert.That(activities?.First().Name, Is.EqualTo("Eiffel Tower"));
     }
 
     [Test]
