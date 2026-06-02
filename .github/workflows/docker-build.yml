@@ -92,3 +92,30 @@ jobs:
           VITE_API_URL=http://localhost:5000
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+  deploy-render:
+    name: Deploy to Render
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    needs: [build-api, build-ui]
+
+    steps:
+    - name: Trigger API deploy hook
+      env:
+        RENDER_API_DEPLOY_HOOK: ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+      run: |
+        if [ -z "$RENDER_API_DEPLOY_HOOK" ]; then
+          echo "RENDER_API_DEPLOY_HOOK secret is not set"
+          exit 1
+        fi
+        curl -fsS -X POST "$RENDER_API_DEPLOY_HOOK"
+
+    - name: Trigger UI deploy hook (optional)
+      env:
+        RENDER_UI_DEPLOY_HOOK: ${{ secrets.RENDER_UI_DEPLOY_HOOK }}
+      run: |
+        if [ -z "$RENDER_UI_DEPLOY_HOOK" ]; then
+          echo "RENDER_UI_DEPLOY_HOOK is not set; skipping UI deploy trigger"
+          exit 0
+        fi
+        curl -fsS -X POST "$RENDER_UI_DEPLOY_HOOK"
