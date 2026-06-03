@@ -1,10 +1,8 @@
-using KMSTraining.API.Data;
-using KMSTraining.API.DTOs;
-using KMSTraining.API.Models;
+using KMSTraining.API.Application.DTOs;
+using KMSTraining.API.Application.Services;
+using KMSTraining.API.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace KMSTraining.API.Controllers;
 
@@ -13,203 +11,134 @@ namespace KMSTraining.API.Controllers;
 [Authorize]
 public class ActivitiesController : ControllerBase
 {
-    private readonly TripPlannerDbContext _context;
+    private readonly IActivityService _activityService;
+    private readonly ILogger<ActivitiesController> _logger;
 
-    public ActivitiesController(TripPlannerDbContext context)
+    public ActivitiesController(IActivityService activityService, ILogger<ActivitiesController> logger)
     {
-        _context = context;
+        _activityService = activityService;
+        _logger = logger;
     }
 
-    private int GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.Parse(userIdClaim ?? "0");
-    }
 
+    /// <summary>
+    /// Get all activities for a destination
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ActivityDto>>> GetActivities([FromQuery] int? destinationId = null)
     {
-        var userId = GetCurrentUserId();
-        var query = _context.Activities
-            .Include(a => a.Destination)
-                .ThenInclude(d => d.Trip)
-            .Where(a => a.Destination.Trip.UserId == userId);
-
-        if (destinationId.HasValue)
+        try
         {
-            query = query.Where(a => a.DestinationId == destinationId.Value);
+            _logger.LogInformation("Fetching activities for destination {DestinationId}", destinationId);
+            var activities = await _activityService.GetDestinationActivitiesAsync(destinationId ?? 0);
+            return Ok(activities);
         }
-
-        var activities = await query
-            .Select(a => new ActivityDto
-            {
-                Id = a.Id,
-                Name = a.Name,
-                Description = a.Description,
-                ScheduledDateTime = a.ScheduledDateTime,
-                DurationMinutes = a.DurationMinutes,
-                Location = a.Location,
-                EstimatedCost = a.EstimatedCost,
-                DestinationId = a.DestinationId,
-                CreatedAt = a.CreatedAt,
-                UpdatedAt = a.UpdatedAt
-            })
-            .ToListAsync();
-
-        return Ok(activities);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching activities for destination {DestinationId}", destinationId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error fetching activities" });
+        }
     }
 
+    /// <summary>
+    /// Get a specific activity
+    /// </summary>
     [HttpGet("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ActivityDto>> GetActivity(int id)
     {
-        var userId = GetCurrentUserId();
-        var activity = await _context.Activities
-            .Include(a => a.Destination)
-                .ThenInclude(d => d.Trip)
-            .FirstOrDefaultAsync(a => a.Id == id && a.Destination.Trip.UserId == userId);
-
-        if (activity == null)
+        try
         {
-            return NotFound(new { message = "Activity not found" });
+            _logger.LogInformation("Fetching activity {ActivityId}", id);
+            var activity = await _activityService.GetActivityByIdAsync(id);
+
+            if (activity == null)
+            {
+                return NotFound(new { message = "Activity not found" });
+            }
+            
+            return Ok(activity);
         }
-
-        var activityDto = new ActivityDto
+        catch (Exception ex)
         {
-            Id = activity.Id,
-            Name = activity.Name,
-            Description = activity.Description,
-            ScheduledDateTime = activity.ScheduledDateTime,
-            DurationMinutes = activity.DurationMinutes,
-            Location = activity.Location,
-            EstimatedCost = activity.EstimatedCost,
-            DestinationId = activity.DestinationId,
-            CreatedAt = activity.CreatedAt,
-            UpdatedAt = activity.UpdatedAt
-        };
-
-        return Ok(activityDto);
+            _logger.LogError(ex, "Error fetching activity {ActivityId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error fetching activity" });
+        }
     }
 
+    /// <summary>
+    /// Create a new activity
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ActivityDto>> CreateActivity([FromBody] CreateActivityDto createActivityDto)
     {
-        var userId = GetCurrentUserId();
-        var destination = await _context.Destinations
-            .Include(d => d.Trip)
-            .FirstOrDefaultAsync(d => d.Id == createActivityDto.DestinationId && d.Trip.UserId == userId);
-
-        if (destination == null)
+        try
         {
-            return NotFound(new { message = "Destination not found" });
+            _logger.LogInformation("Creating activity for destination {DestinationId}", createActivityDto.DestinationId);
+            var activity = await _activityService.CreateActivityAsync(createActivityDto.DestinationId, createActivityDto);
+            return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
         }
-
-        if (createActivityDto.ScheduledDateTime < destination.ArrivalDate
-            || createActivityDto.ScheduledDateTime > destination.DepartureDate)
+        catch (Exception ex)
         {
-            return BadRequest(new { message = "Activity must be scheduled within destination dates" });
+            _logger.LogError(ex, "Error creating activity");
+            return BadRequest(new { message = "Error creating activity" });
         }
-
-        var activity = new Activity
-        {
-            Name = createActivityDto.Name,
-            Description = createActivityDto.Description,
-            ScheduledDateTime = createActivityDto.ScheduledDateTime,
-            DurationMinutes = createActivityDto.DurationMinutes,
-            Location = createActivityDto.Location,
-            EstimatedCost = createActivityDto.EstimatedCost,
-            DestinationId = createActivityDto.DestinationId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Activities.Add(activity);
-        await _context.SaveChangesAsync();
-
-        var activityDto = new ActivityDto
-        {
-            Id = activity.Id,
-            Name = activity.Name,
-            Description = activity.Description,
-            ScheduledDateTime = activity.ScheduledDateTime,
-            DurationMinutes = activity.DurationMinutes,
-            Location = activity.Location,
-            EstimatedCost = activity.EstimatedCost,
-            DestinationId = activity.DestinationId,
-            CreatedAt = activity.CreatedAt,
-            UpdatedAt = activity.UpdatedAt
-        };
-
-        return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activityDto);
     }
 
+    /// <summary>
+    /// Update an activity
+    /// </summary>
     [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ActivityDto>> UpdateActivity(int id, [FromBody] UpdateActivityDto updateActivityDto)
     {
-        var userId = GetCurrentUserId();
-        var activity = await _context.Activities
-            .Include(a => a.Destination)
-                .ThenInclude(d => d.Trip)
-            .FirstOrDefaultAsync(a => a.Id == id && a.Destination.Trip.UserId == userId);
-
-        if (activity == null)
+        try
         {
-            return NotFound(new { message = "Activity not found" });
+            _logger.LogInformation("Updating activity {ActivityId}", id);
+            var activity = await _activityService.UpdateActivityAsync(id, updateActivityDto);
+            return Ok(activity);
         }
-
-        if (!string.IsNullOrEmpty(updateActivityDto.Name))
-            activity.Name = updateActivityDto.Name;
-
-        if (updateActivityDto.Description != null)
-            activity.Description = updateActivityDto.Description;
-
-        if (updateActivityDto.ScheduledDateTime.HasValue)
-            activity.ScheduledDateTime = updateActivityDto.ScheduledDateTime.Value;
-
-        if (updateActivityDto.DurationMinutes.HasValue)
-            activity.DurationMinutes = updateActivityDto.DurationMinutes.Value;
-
-        if (updateActivityDto.Location != null)
-            activity.Location = updateActivityDto.Location;
-
-        if (updateActivityDto.EstimatedCost.HasValue)
-            activity.EstimatedCost = updateActivityDto.EstimatedCost;
-
-        activity.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        var activityDto = new ActivityDto
+        catch (EntityNotFoundException ex)
         {
-            Id = activity.Id,
-            Name = activity.Name,
-            Description = activity.Description,
-            ScheduledDateTime = activity.ScheduledDateTime,
-            DurationMinutes = activity.DurationMinutes,
-            Location = activity.Location,
-            EstimatedCost = activity.EstimatedCost,
-            DestinationId = activity.DestinationId,
-            CreatedAt = activity.CreatedAt,
-            UpdatedAt = activity.UpdatedAt
-        };
-
-        return Ok(activityDto);
+            _logger.LogWarning("Activity not found: {ActivityId}", id);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating activity {ActivityId}", id);
+            return BadRequest(new { message = "Error updating activity" });
+        }
     }
 
+    /// <summary>
+    /// Delete an activity
+    /// </summary>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteActivity(int id)
     {
-        var userId = GetCurrentUserId();
-        var activity = await _context.Activities
-            .Include(a => a.Destination)
-                .ThenInclude(d => d.Trip)
-            .FirstOrDefaultAsync(a => a.Id == id && a.Destination.Trip.UserId == userId);
-
-        if (activity == null)
+        try
         {
-            return NotFound(new { message = "Activity not found" });
+            _logger.LogInformation("Deleting activity {ActivityId}", id);
+            var result = await _activityService.DeleteActivityAsync(id);
+            
+            if (!result)
+            {
+                return NotFound(new { message = "Activity not found" });
+            }
+            
+            return NoContent();
         }
-
-        _context.Activities.Remove(activity);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting activity {ActivityId}", id);
+            return BadRequest(new { message = "Error deleting activity" });
+        }
     }
 }

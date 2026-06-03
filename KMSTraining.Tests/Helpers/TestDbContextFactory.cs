@@ -1,4 +1,4 @@
-using KMSTraining.API.Data;
+using KMSTraining.API.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace KMSTraining.Tests.Helpers;

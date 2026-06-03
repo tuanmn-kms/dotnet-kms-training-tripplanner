@@ -1,10 +1,8 @@
-using KMSTraining.API.Data;
-using KMSTraining.API.DTOs;
-using KMSTraining.API.Models;
+using KMSTraining.API.Application.DTOs;
+using KMSTraining.API.Application.Services;
+using KMSTraining.API.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace KMSTraining.API.Controllers;
 
@@ -13,221 +11,134 @@ namespace KMSTraining.API.Controllers;
 [Authorize]
 public class DestinationsController : ControllerBase
 {
-    private readonly TripPlannerDbContext _context;
+    private readonly IDestinationService _destinationService;
+    private readonly ILogger<DestinationsController> _logger;
 
-    public DestinationsController(TripPlannerDbContext context)
+    public DestinationsController(IDestinationService destinationService, ILogger<DestinationsController> logger)
     {
-        _context = context;
+        _destinationService = destinationService;
+        _logger = logger;
     }
 
-    private int GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.Parse(userIdClaim ?? "0");
-    }
 
+    /// <summary>
+    /// Get all destinations for a trip
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<DestinationDto>>> GetDestinations([FromQuery] int? tripId = null)
     {
-        var userId = GetCurrentUserId();
-        var query = _context.Destinations
-            .Include(d => d.Trip)
-            .Where(d => d.Trip.UserId == userId);
-
-        if (tripId.HasValue)
+        try
         {
-            query = query.Where(d => d.TripId == tripId.Value);
+            _logger.LogInformation("Fetching destinations for trip {TripId}", tripId);
+            var destinations = await _destinationService.GetTripDestinationsAsync(tripId ?? 0);
+            return Ok(destinations);
         }
-
-        var destinations = await query
-            .Select(d => new DestinationDto
-            {
-                Id = d.Id,
-                Name = d.Name,
-                Country = d.Country,
-                City = d.City,
-                Description = d.Description,
-                ArrivalDate = d.ArrivalDate,
-                DepartureDate = d.DepartureDate,
-                TripId = d.TripId,
-                CreatedAt = d.CreatedAt,
-                UpdatedAt = d.UpdatedAt
-            })
-            .ToListAsync();
-
-        return Ok(destinations);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching destinations for trip {TripId}", tripId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error fetching destinations" });
+        }
     }
 
+    /// <summary>
+    /// Get a specific destination
+    /// </summary>
     [HttpGet("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DestinationDetailDto>> GetDestination(int id)
     {
-        var userId = GetCurrentUserId();
-        var destination = await _context.Destinations
-            .Include(d => d.Trip)
-            .Include(d => d.Activities)
-            .FirstOrDefaultAsync(d => d.Id == id && d.Trip.UserId == userId);
-
-        if (destination == null)
+        try
         {
-            return NotFound(new { message = "Destination not found" });
-        }
+            _logger.LogInformation("Fetching destination {DestinationId}", id);
+            var destination = await _destinationService.GetDestinationByIdAsync(id);
 
-        var destinationDto = new DestinationDetailDto
-        {
-            Id = destination.Id,
-            Name = destination.Name,
-            Country = destination.Country,
-            City = destination.City,
-            Description = destination.Description,
-            ArrivalDate = destination.ArrivalDate,
-            DepartureDate = destination.DepartureDate,
-            TripId = destination.TripId,
-            CreatedAt = destination.CreatedAt,
-            UpdatedAt = destination.UpdatedAt,
-            Activities = destination.Activities.Select(a => new ActivityDto
+            if (destination == null)
             {
-                Id = a.Id,
-                Name = a.Name,
-                Description = a.Description,
-                ScheduledDateTime = a.ScheduledDateTime,
-                DurationMinutes = a.DurationMinutes,
-                Location = a.Location,
-                EstimatedCost = a.EstimatedCost,
-                DestinationId = a.DestinationId,
-                CreatedAt = a.CreatedAt,
-                UpdatedAt = a.UpdatedAt
-            }).ToList()
-        };
-
-        return Ok(destinationDto);
+                return NotFound(new { message = "Destination not found" });
+            }
+            
+            return Ok(destination);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching destination {DestinationId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error fetching destination" });
+        }
     }
 
+    /// <summary>
+    /// Create a new destination
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<DestinationDto>> CreateDestination([FromBody] CreateDestinationDto createDestinationDto)
     {
-        var userId = GetCurrentUserId();
-        var trip = await _context.Trips.FirstOrDefaultAsync(t => t.Id == createDestinationDto.TripId && t.UserId == userId);
-
-        if (trip == null)
+        try
         {
-            return NotFound(new { message = "Trip not found" });
+            _logger.LogInformation("Creating destination for trip {TripId}", createDestinationDto.TripId);
+            var destination = await _destinationService.CreateDestinationAsync(createDestinationDto.TripId, createDestinationDto);
+            return CreatedAtAction(nameof(GetDestination), new { id = destination.Id }, destination);
         }
-
-        if (createDestinationDto.DepartureDate <= createDestinationDto.ArrivalDate)
+        catch (Exception ex)
         {
-            return BadRequest(new { message = "Departure date must be after arrival date" });
+            _logger.LogError(ex, "Error creating destination");
+            return BadRequest(new { message = "Error creating destination" });
         }
-
-        if (createDestinationDto.ArrivalDate < trip.StartDate || createDestinationDto.DepartureDate > trip.EndDate)
-        {
-            return BadRequest(new { message = "Destination dates must be within trip dates" });
-        }
-
-        var destination = new Destination
-        {
-            Name = createDestinationDto.Name,
-            Country = createDestinationDto.Country,
-            City = createDestinationDto.City,
-            Description = createDestinationDto.Description,
-            ArrivalDate = createDestinationDto.ArrivalDate,
-            DepartureDate = createDestinationDto.DepartureDate,
-            TripId = createDestinationDto.TripId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Destinations.Add(destination);
-        await _context.SaveChangesAsync();
-
-        var destinationDto = new DestinationDto
-        {
-            Id = destination.Id,
-            Name = destination.Name,
-            Country = destination.Country,
-            City = destination.City,
-            Description = destination.Description,
-            ArrivalDate = destination.ArrivalDate,
-            DepartureDate = destination.DepartureDate,
-            TripId = destination.TripId,
-            CreatedAt = destination.CreatedAt,
-            UpdatedAt = destination.UpdatedAt
-        };
-
-        return CreatedAtAction(nameof(GetDestination), new { id = destination.Id }, destinationDto);
     }
 
+    /// <summary>
+    /// Update a destination
+    /// </summary>
     [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DestinationDto>> UpdateDestination(int id, [FromBody] UpdateDestinationDto updateDestinationDto)
     {
-        var userId = GetCurrentUserId();
-        var destination = await _context.Destinations
-            .Include(d => d.Trip)
-            .FirstOrDefaultAsync(d => d.Id == id && d.Trip.UserId == userId);
-
-        if (destination == null)
+        try
         {
-            return NotFound(new { message = "Destination not found" });
+            _logger.LogInformation("Updating destination {DestinationId}", id);
+            var destination = await _destinationService.UpdateDestinationAsync(id, updateDestinationDto);
+            return Ok(destination);
         }
-
-        if (updateDestinationDto.ArrivalDate.HasValue && updateDestinationDto.DepartureDate.HasValue &&
-            updateDestinationDto.DepartureDate.Value <= updateDestinationDto.ArrivalDate.Value)
+        catch (EntityNotFoundException ex)
         {
-            return BadRequest(new { message = "Departure date must be after arrival date" });
+            _logger.LogWarning("Destination not found: {DestinationId}", id);
+            return NotFound(new { message = ex.Message });
         }
-
-        if (!string.IsNullOrEmpty(updateDestinationDto.Name))
-            destination.Name = updateDestinationDto.Name;
-
-        if (!string.IsNullOrEmpty(updateDestinationDto.Country))
-            destination.Country = updateDestinationDto.Country;
-
-        if (updateDestinationDto.City != null)
-            destination.City = updateDestinationDto.City;
-
-        if (updateDestinationDto.Description != null)
-            destination.Description = updateDestinationDto.Description;
-
-        if (updateDestinationDto.ArrivalDate.HasValue)
-            destination.ArrivalDate = updateDestinationDto.ArrivalDate.Value;
-
-        if (updateDestinationDto.DepartureDate.HasValue)
-            destination.DepartureDate = updateDestinationDto.DepartureDate.Value;
-
-        destination.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        var destinationDto = new DestinationDto
+        catch (Exception ex)
         {
-            Id = destination.Id,
-            Name = destination.Name,
-            Country = destination.Country,
-            City = destination.City,
-            Description = destination.Description,
-            ArrivalDate = destination.ArrivalDate,
-            DepartureDate = destination.DepartureDate,
-            TripId = destination.TripId,
-            CreatedAt = destination.CreatedAt,
-            UpdatedAt = destination.UpdatedAt
-        };
-
-        return Ok(destinationDto);
+            _logger.LogError(ex, "Error updating destination {DestinationId}", id);
+            return BadRequest(new { message = "Error updating destination" });
+        }
     }
 
+    /// <summary>
+    /// Delete a destination
+    /// </summary>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteDestination(int id)
     {
-        var userId = GetCurrentUserId();
-        var destination = await _context.Destinations
-            .Include(d => d.Trip)
-            .FirstOrDefaultAsync(d => d.Id == id && d.Trip.UserId == userId);
-
-        if (destination == null)
+        try
         {
-            return NotFound(new { message = "Destination not found" });
+            _logger.LogInformation("Deleting destination {DestinationId}", id);
+            var result = await _destinationService.DeleteDestinationAsync(id);
+            
+            if (!result)
+            {
+                return NotFound(new { message = "Destination not found" });
+            }
+            
+            return NoContent();
         }
-
-        _context.Destinations.Remove(destination);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting destination {DestinationId}", id);
+            return BadRequest(new { message = "Error deleting destination" });
+        }
     }
 }

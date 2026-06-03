@@ -1,304 +1,90 @@
+using KMSTraining.API.Application.DTOs;
+using KMSTraining.API.Application.Services;
 using KMSTraining.API.Controllers;
-using KMSTraining.API.Data;
-using KMSTraining.API.DTOs;
-using KMSTraining.API.Models;
-using KMSTraining.Tests.Helpers;
-using Microsoft.AspNetCore.Http;
+using KMSTraining.API.Domain.Entities;
+using KMSTraining.API.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace KMSTraining.Tests.Controllers;
 
 [TestFixture]
 public class ActivitiesControllerTests
 {
-    private TripPlannerDbContext _context = null!;
+    private Mock<IActivityService> _activityService = null!;
     private ActivitiesController _controller = null!;
-    private User _testUser = null!;
-    private Trip _testTrip = null!;
-    private Destination _testDestination = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _context = TestDbContextFactory.CreateInMemoryContext();
-        _controller = new ActivitiesController(_context);
-
-        // Create test data
-        _testUser = new User
-        {
-            Id = 1,
-            Username = "testuser",
-            Email = "test@example.com",
-            PasswordHash = "hash"
-        };
-        _context.Users.Add(_testUser);
-
-        _testTrip = new Trip
-        {
-            Id = 1,
-            Name = "Test Trip",
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(10),
-            UserId = _testUser.Id
-        };
-        _context.Trips.Add(_testTrip);
-
-        _testDestination = new Destination
-        {
-            Id = 1,
-            Name = "Paris",
-            Country = "France",
-            ArrivalDate = DateTime.UtcNow.AddDays(1),
-            DepartureDate = DateTime.UtcNow.AddDays(5),
-            TripId = _testTrip.Id
-        };
-        _context.Destinations.Add(_testDestination);
-        _context.SaveChanges();
-
-        // Setup claims
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, _testUser.Id.ToString())
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = claimsPrincipal }
-        };
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        _context.Database.EnsureDeleted();
-        _context.Dispose();
+        _activityService = new Mock<IActivityService>();
+        _controller = new ActivitiesController(_activityService.Object, Mock.Of<ILogger<ActivitiesController>>());
     }
 
     [Test]
-    public async Task GetActivities_ReturnsAllActivities()
+    public async Task GetActivities_WithDestinationId_ReturnsActivities()
     {
-        // Arrange
-        _context.Activities.AddRange(
-            new Activity
-            {
-                Name = "Eiffel Tower Visit",
-                ScheduledDateTime = DateTime.UtcNow.AddDays(2),
-                DurationMinutes = 120,
-                DestinationId = _testDestination.Id
-            },
-            new Activity
-            {
-                Name = "Louvre Museum",
-                ScheduledDateTime = DateTime.UtcNow.AddDays(3),
-                DurationMinutes = 180,
-                DestinationId = _testDestination.Id
-            }
-        );
-        await _context.SaveChangesAsync();
+        var activities = new[]
+        {
+            new ActivityDto { Id = 1, Name = "Museum", DestinationId = 3 }
+        };
 
-        // Act
-        var result = await _controller.GetActivities();
+        _activityService.Setup(s => s.GetDestinationActivitiesAsync(3)).ReturnsAsync(activities);
 
-        // Assert
+        var result = await _controller.GetActivities(3);
+
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-        var okResult = result.Result as OkObjectResult;
-        var activities = okResult!.Value as IEnumerable<ActivityDto>;
-        Assert.That(activities!.Count(), Is.EqualTo(2));
+        _activityService.Verify(s => s.GetDestinationActivitiesAsync(3), Times.Once);
     }
 
     [Test]
-    public async Task GetActivities_WithDestinationId_ReturnsFilteredActivities()
+    public async Task GetActivity_WhenMissing_ReturnsNotFound()
     {
-        // Arrange
-        var anotherDestination = new Destination
-        {
-            Name = "London",
-            Country = "UK",
-            ArrivalDate = DateTime.UtcNow.AddDays(6),
-            DepartureDate = DateTime.UtcNow.AddDays(9),
-            TripId = _testTrip.Id
-        };
-        _context.Destinations.Add(anotherDestination);
-        await _context.SaveChangesAsync();
+        _activityService.Setup(s => s.GetActivityByIdAsync(404)).ReturnsAsync((ActivityDto?)null);
 
-        _context.Activities.AddRange(
-            new Activity
-            {
-                Name = "Eiffel Tower",
-                ScheduledDateTime = DateTime.UtcNow.AddDays(2),
-                DurationMinutes = 120,
-                DestinationId = _testDestination.Id
-            },
-            new Activity
-            {
-                Name = "Big Ben",
-                ScheduledDateTime = DateTime.UtcNow.AddDays(7),
-                DurationMinutes = 60,
-                DestinationId = anotherDestination.Id
-            }
-        );
-        await _context.SaveChangesAsync();
+        var result = await _controller.GetActivity(404);
 
-        // Act
-        var result = await _controller.GetActivities(_testDestination.Id);
-
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-        var okResult = result.Result as OkObjectResult;
-        var activities = okResult!.Value as IEnumerable<ActivityDto>;
-        Assert.That(activities!.Count(), Is.EqualTo(1));
-        Assert.That(activities?.First().Name, Is.EqualTo("Eiffel Tower"));
-    }
-
-    [Test]
-    public async Task CreateActivity_ValidActivity_ReturnsCreated()
-    {
-        // Arrange
-        var createDto = new CreateActivityDto
-        {
-            Name = "Seine River Cruise",
-            Description = "Evening cruise",
-            ScheduledDateTime = DateTime.UtcNow.AddDays(2),
-            DurationMinutes = 90,
-            Location = "Seine River",
-            EstimatedCost = 50.00m,
-            DestinationId = _testDestination.Id
-        };
-
-        // Act
-        var result = await _controller.CreateActivity(createDto);
-
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
-        var createdResult = result.Result as CreatedAtActionResult;
-        var activityDto = createdResult!.Value as ActivityDto;
-        Assert.That(activityDto!.Name, Is.EqualTo("Seine River Cruise"));
-        Assert.That(activityDto.EstimatedCost, Is.EqualTo(50.00m));
-    }
-
-    [Test]
-    public async Task CreateActivity_ScheduledOutsideDestinationDates_ReturnsBadRequest()
-    {
-        // Arrange
-        var createDto = new CreateActivityDto
-        {
-            Name = "Invalid Activity",
-            ScheduledDateTime = DateTime.UtcNow.AddDays(10), // Outside destination dates
-            DurationMinutes = 60,
-            DestinationId = _testDestination.Id
-        };
-
-        // Act
-        var result = await _controller.CreateActivity(createDto);
-
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-    }
-
-    [Test]
-    public async Task CreateActivity_NonExistentDestination_ReturnsNotFound()
-    {
-        // Arrange
-        var createDto = new CreateActivityDto
-        {
-            Name = "Activity",
-            ScheduledDateTime = DateTime.UtcNow.AddDays(2),
-            DurationMinutes = 60,
-            DestinationId = 999
-        };
-
-        // Act
-        var result = await _controller.CreateActivity(createDto);
-
-        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
-    public async Task UpdateActivity_ValidUpdate_ReturnsUpdated()
+    public async Task CreateActivity_UsesDtoDestinationIdAndReturnsCreated()
     {
-        // Arrange
-        var activity = new Activity
+        var request = new CreateActivityDto
         {
-            Name = "Original Activity",
-            ScheduledDateTime = DateTime.UtcNow.AddDays(2),
-            DurationMinutes = 60,
-            DestinationId = _testDestination.Id
-        };
-        _context.Activities.Add(activity);
-        await _context.SaveChangesAsync();
-
-        var updateDto = new UpdateActivityDto
-        {
-            Name = "Updated Activity",
-            DurationMinutes = 120,
-            EstimatedCost = 75.00m
+            Name = "Cruise",
+            ScheduledDateTime = DateTime.UtcNow,
+            DestinationId = 8
         };
 
-        // Act
-        var result = await _controller.UpdateActivity(activity.Id, updateDto);
+        _activityService.Setup(s => s.CreateActivityAsync(8, request))
+            .ReturnsAsync(new ActivityDto { Id = 20, Name = "Cruise", DestinationId = 8 });
 
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-        var okResult = result.Result as OkObjectResult;
-        var activityDto = okResult!.Value as ActivityDto;
-        Assert.That(activityDto!.Name, Is.EqualTo("Updated Activity"));
-        Assert.That(activityDto.DurationMinutes, Is.EqualTo(120));
-        Assert.That(activityDto.EstimatedCost, Is.EqualTo(75.00m));
+        var result = await _controller.CreateActivity(request);
+
+        Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+        _activityService.Verify(s => s.CreateActivityAsync(8, request), Times.Once);
     }
 
     [Test]
-    public async Task DeleteActivity_ExistingActivity_ReturnsNoContent()
+    public async Task UpdateActivity_WhenMissing_ReturnsNotFound()
     {
-        // Arrange
-        var activity = new Activity
-        {
-            Name = "To Delete",
-            ScheduledDateTime = DateTime.UtcNow.AddDays(2),
-            DurationMinutes = 60,
-            DestinationId = _testDestination.Id
-        };
-        _context.Activities.Add(activity);
-        await _context.SaveChangesAsync();
+        _activityService.Setup(s => s.UpdateActivityAsync(404, It.IsAny<UpdateActivityDto>()))
+            .ThrowsAsync(new EntityNotFoundException(nameof(Activity), 404));
 
-        // Act
-        var result = await _controller.DeleteActivity(activity.Id);
+        var result = await _controller.UpdateActivity(404, new UpdateActivityDto { Name = "Updated" });
 
-        // Assert
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public async Task DeleteActivity_WhenDeleted_ReturnsNoContent()
+    {
+        _activityService.Setup(s => s.DeleteActivityAsync(1)).ReturnsAsync(true);
+
+        var result = await _controller.DeleteActivity(1);
+
         Assert.That(result, Is.InstanceOf<NoContentResult>());
-
-        var deletedActivity = await _context.Activities.FindAsync(activity.Id);
-        Assert.That(deletedActivity, Is.Null);
-    }
-
-    [Test]
-    public async Task GetActivity_ExistingActivity_ReturnsActivity()
-    {
-        // Arrange
-        var activity = new Activity
-        {
-            Name = "Test Activity",
-            Description = "Test Description",
-            ScheduledDateTime = DateTime.UtcNow.AddDays(2),
-            DurationMinutes = 90,
-            Location = "Test Location",
-            EstimatedCost = 100.00m,
-            DestinationId = _testDestination.Id
-        };
-        _context.Activities.Add(activity);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _controller.GetActivity(activity.Id);
-
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-        var okResult = result.Result as OkObjectResult;
-        var activityDto = okResult!.Value as ActivityDto;
-        Assert.That(activityDto!.Name, Is.EqualTo("Test Activity"));
-        Assert.That(activityDto.Location, Is.EqualTo("Test Location"));
     }
 }

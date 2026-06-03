@@ -1,4 +1,7 @@
 <Solution>
   <Project Path="KMSTraining.API/KMSTraining.API.csproj" />
+  <Project Path="KMSTraining.API.Application/KMSTraining.API.Application.csproj" />
+  <Project Path="KMSTraining.API.Domain/KMSTraining.API.Domain.csproj" />
+  <Project Path="KMSTraining.API.Infrastructure/KMSTraining.API.Infrastructure.csproj" />
   <Project Path="KMSTraining.Tests/KMSTraining.Tests.csproj" />
 </Solution>

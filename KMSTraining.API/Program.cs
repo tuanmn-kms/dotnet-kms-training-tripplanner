@@ -1,5 +1,5 @@
-using KMSTraining.API.Data;
-using KMSTraining.API.Services;
+using KMSTraining.API.Infrastructure.Data;
+using KMSTraining.API.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,39 +8,12 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 var databaseProvider = (builder.Configuration["DatabaseProvider"] ?? "sqlserver").Trim().ToLowerInvariant();
-var connectionString = builder.Configuration.GetConnectionString("TripPlannerDatabase")
-    ?? throw new InvalidOperationException("Connection string 'TripPlannerDatabase' is not configured.");
 
-// Add DbContext
-builder.Services.AddDbContext<TripPlannerDbContext>(options =>
-{
-    if (databaseProvider is "postgres" or "postgresql")
-    {
-        options.UseNpgsql(
-            connectionString,
-            npgsqlOptions =>
-            {
-                npgsqlOptions.CommandTimeout(60);
-                npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorCodesToAdd: null);
-            });
-    }
-    else
-    {
-        options.UseSqlServer(
-            connectionString,
-            sqlOptions =>
-            {
-                sqlOptions.CommandTimeout(60);
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null);
-            });
-    }
-});
+// Add Infrastructure Services (DbContext, Repositories, Unit of Work)
+builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// Add Application Services (Mappers, Business Logic Services)
+builder.Services.AddApplicationServices();
 
 // Add Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -66,10 +39,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-
-// Add services
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddControllers();
 

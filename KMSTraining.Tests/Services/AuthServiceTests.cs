@@ -1,7 +1,10 @@
-using KMSTraining.API.Data;
-using KMSTraining.API.DTOs;
-using KMSTraining.API.Models;
-using KMSTraining.API.Services;
+using KMSTraining.API.Application.DTOs;
+using KMSTraining.API.Application.Mapping;
+using KMSTraining.API.Application.Services;
+using KMSTraining.API.Domain.Entities;
+using KMSTraining.API.Domain.Exceptions;
+using KMSTraining.API.Infrastructure.Data;
+using KMSTraining.API.Infrastructure.UnitOfWork;
 using KMSTraining.Tests.Helpers;
 using Moq;
 
@@ -19,7 +22,7 @@ public class AuthServiceTests
     {
         _context = TestDbContextFactory.CreateInMemoryContext();
         _mockTokenService = new Mock<ITokenService>();
-        _authService = new AuthService(_context, _mockTokenService.Object);
+        _authService = new AuthService(new UnitOfWork(_context), _mockTokenService.Object, new Mapper());
     }
 
     [TearDown]
@@ -60,7 +63,7 @@ public class AuthServiceTests
     }
 
     [Test]
-    public void RegisterAsync_DuplicateUsername_ThrowsInvalidOperationException()
+    public void RegisterAsync_DuplicateUsername_ThrowsDuplicateEntityException()
     {
         // Arrange
         _context.Users.Add(new User
@@ -79,13 +82,13 @@ public class AuthServiceTests
         };
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        var ex = Assert.ThrowsAsync<DuplicateEntityException>(async () =>
             await _authService.RegisterAsync(registerDto));
         Assert.That(ex.Message, Is.EqualTo("Username already exists"));
     }
 
     [Test]
-    public void RegisterAsync_DuplicateEmail_ThrowsInvalidOperationException()
+    public void RegisterAsync_DuplicateEmail_ThrowsDuplicateEntityException()
     {
         // Arrange
         _context.Users.Add(new User
@@ -104,7 +107,7 @@ public class AuthServiceTests
         };
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        var ex = Assert.ThrowsAsync<DuplicateEntityException>(async () =>
             await _authService.RegisterAsync(registerDto));
         Assert.That(ex.Message, Is.EqualTo("Email already exists"));
     }
@@ -141,7 +144,7 @@ public class AuthServiceTests
     }
 
     [Test]
-    public void LoginAsync_InvalidUsername_ThrowsUnauthorizedAccessException()
+    public void LoginAsync_InvalidUsername_ThrowsAuthenticationException()
     {
         // Arrange
         var loginDto = new LoginDto
@@ -151,13 +154,13 @@ public class AuthServiceTests
         };
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
+        var ex = Assert.ThrowsAsync<AuthenticationException>(async () =>
             await _authService.LoginAsync(loginDto));
         Assert.That(ex.Message, Is.EqualTo("Invalid credentials"));
     }
 
     [Test]
-    public async Task LoginAsync_InvalidPassword_ThrowsUnauthorizedAccessException()
+    public async Task LoginAsync_InvalidPassword_ThrowsAuthenticationException()
     {
         // Arrange
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("correctpassword");
@@ -176,7 +179,7 @@ public class AuthServiceTests
         };
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
+        var ex = Assert.ThrowsAsync<AuthenticationException>(async () =>
             await _authService.LoginAsync(loginDto));
         Assert.That(ex.Message, Is.EqualTo("Invalid credentials"));
     }

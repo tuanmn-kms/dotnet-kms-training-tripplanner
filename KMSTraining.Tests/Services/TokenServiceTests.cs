@@ -1,5 +1,5 @@
-using KMSTraining.API.DTOs;
-using KMSTraining.API.Services;
+using KMSTraining.API.Application.Services;
+using KMSTraining.API.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Moq;
 

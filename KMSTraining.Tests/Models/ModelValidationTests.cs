@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using KMSTraining.API.Models;
+using KMSTraining.API.Domain.Entities;
 
 namespace KMSTraining.Tests.Models;
 

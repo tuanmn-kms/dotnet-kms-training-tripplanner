@@ -29,6 +29,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KMSTraining.API\KMSTraining.API.csproj" />
+    <ProjectReference Include="..\KMSTraining.API.Application\KMSTraining.API.Application.csproj" />
+    <ProjectReference Include="..\KMSTraining.API.Domain\KMSTraining.API.Domain.csproj" />
+    <ProjectReference Include="..\KMSTraining.API.Infrastructure\KMSTraining.API.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

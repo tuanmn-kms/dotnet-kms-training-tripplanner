@@ -1,5 +1,5 @@
-using KMSTraining.API.Data;
-using KMSTraining.API.Models;
+using KMSTraining.API.Domain.Entities;
+using KMSTraining.API.Infrastructure.Data;
 using KMSTraining.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
 

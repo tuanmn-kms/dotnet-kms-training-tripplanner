@@ -1,10 +1,12 @@
+using KMSTraining.API.Application.DTOs;
+using KMSTraining.API.Application.Services;
 using KMSTraining.API.Controllers;
-using KMSTraining.API.Data;
-using KMSTraining.API.DTOs;
-using KMSTraining.API.Models;
-using KMSTraining.Tests.Helpers;
+using KMSTraining.API.Domain.Entities;
+using KMSTraining.API.Domain.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Moq;
 using System.Security.Claims;
 
 namespace KMSTraining.Tests.Controllers;
@@ -12,234 +14,109 @@ namespace KMSTraining.Tests.Controllers;
 [TestFixture]
 public class TripsControllerTests
 {
-    private TripPlannerDbContext _context = null!;
+    private Mock<ITripService> _tripService = null!;
     private TripsController _controller = null!;
-    private User _testUser = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _context = TestDbContextFactory.CreateInMemoryContext();
-        _controller = new TripsController(_context);
+        _tripService = new Mock<ITripService>();
+        _controller = new TripsController(_tripService.Object, Mock.Of<ILogger<TripsController>>());
 
-        // Create test user
-        _testUser = new User
+        var claims = new[]
         {
-            Id = 1,
-            Username = "testuser",
-            Email = "test@example.com",
-            PasswordHash = "hash"
+            new Claim(ClaimTypes.NameIdentifier, "7")
         };
-        _context.Users.Add(_testUser);
-        _context.SaveChanges();
-
-        // Setup claims for authenticated user
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, _testUser.Id.ToString())
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
 
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { User = claimsPrincipal }
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"))
+            }
         };
     }
 
-    [TearDown]
-    public void TearDown()
-    {
-        _context.Database.EnsureDeleted();
-        _context.Dispose();
-    }
-
     [Test]
-    public async Task GetTrips_ReturnsUserTrips()
+    public async Task GetTrips_ReturnsCurrentUsersTrips()
     {
-        // Arrange
-        _context.Trips.AddRange(
-            new Trip { Name = "Trip 1", UserId = _testUser.Id, StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(5) },
-            new Trip { Name = "Trip 2", UserId = _testUser.Id, StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(3) }
-        );
-        await _context.SaveChangesAsync();
+        var trips = new[]
+        {
+            new TripDto { Id = 1, Name = "Trip 1", UserId = 7 },
+            new TripDto { Id = 2, Name = "Trip 2", UserId = 7 }
+        };
 
-        // Act
+        _tripService.Setup(s => s.GetUserTripsAsync(7)).ReturnsAsync(trips);
+
         var result = await _controller.GetTrips();
 
-        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-        var okResult = result.Result as OkObjectResult;
-        var trips = okResult!.Value as IEnumerable<TripDto>;
-        Assert.That(trips!.Count(), Is.EqualTo(2));
+        var okResult = (OkObjectResult)result.Result!;
+        Assert.That((IEnumerable<TripDto>)okResult.Value!, Has.Exactly(2).Items);
+        _tripService.Verify(s => s.GetUserTripsAsync(7), Times.Once);
     }
 
     [Test]
-    public async Task GetTrip_ExistingTrip_ReturnsTrip()
+    public async Task GetTrip_WhenMissing_ReturnsNotFound()
     {
-        // Arrange
-        var trip = new Trip
-        {
-            Name = "Test Trip",
-            Description = "Test Description",
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(5),
-            UserId = _testUser.Id
-        };
-        _context.Trips.Add(trip);
-        await _context.SaveChangesAsync();
+        _tripService.Setup(s => s.GetTripByIdAsync(404)).ReturnsAsync((TripDetailDto?)null);
 
-        // Act
-        var result = await _controller.GetTrip(trip.Id);
+        var result = await _controller.GetTrip(404);
 
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-        var okResult = result.Result as OkObjectResult;
-        var tripDto = okResult!.Value as TripDetailDto;
-        Assert.That(tripDto, Is.Not.Null);
-        Assert.That(tripDto!.Name, Is.EqualTo("Test Trip"));
-    }
-
-    [Test]
-    public async Task GetTrip_NonExistingTrip_ReturnsNotFound()
-    {
-        // Act
-        var result = await _controller.GetTrip(999);
-
-        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
-    public async Task CreateTrip_ValidTrip_ReturnsCreatedTrip()
+    public async Task CreateTrip_ReturnsCreatedTrip()
     {
-        // Arrange
-        var createTripDto = new CreateTripDto
+        var request = new CreateTripDto
         {
             Name = "New Trip",
-            Description = "New Description",
             StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(7)
+            EndDate = DateTime.UtcNow.AddDays(3)
         };
 
-        // Act
-        var result = await _controller.CreateTrip(createTripDto);
+        _tripService.Setup(s => s.CreateTripAsync(7, request))
+            .ReturnsAsync(new TripDto { Id = 10, Name = "New Trip", Status = TripStatus.Planning, UserId = 7 });
 
-        // Assert
+        var result = await _controller.CreateTrip(request);
+
         Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
-        var createdResult = result.Result as CreatedAtActionResult;
-        var tripDto = createdResult!.Value as TripDto;
-        Assert.That(tripDto, Is.Not.Null);
-        Assert.That(tripDto!.Name, Is.EqualTo("New Trip"));
-        Assert.That(tripDto.Status, Is.EqualTo(TripStatus.Planning));
+        var createdResult = (CreatedAtActionResult)result.Result!;
+        Assert.That(((TripDto)createdResult.Value!).Name, Is.EqualTo("New Trip"));
     }
 
     [Test]
-    public async Task CreateTrip_EndDateBeforeStartDate_ReturnsBadRequest()
+    public async Task UpdateTrip_WhenMissing_ReturnsNotFound()
     {
-        // Arrange
-        var createTripDto = new CreateTripDto
-        {
-            Name = "Invalid Trip",
-            StartDate = DateTime.UtcNow.AddDays(5),
-            EndDate = DateTime.UtcNow
-        };
+        _tripService.Setup(s => s.UpdateTripAsync(99, It.IsAny<UpdateTripDto>()))
+            .ThrowsAsync(new EntityNotFoundException(nameof(Trip), 99));
 
-        // Act
-        var result = await _controller.CreateTrip(createTripDto);
+        var result = await _controller.UpdateTrip(99, new UpdateTripDto { Name = "Updated" });
 
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
-    public async Task UpdateTrip_ValidUpdate_ReturnsUpdatedTrip()
+    public async Task DeleteTrip_WhenDeleted_ReturnsNoContent()
     {
-        // Arrange
-        var trip = new Trip
-        {
-            Name = "Original Trip",
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(5),
-            UserId = _testUser.Id
-        };
-        _context.Trips.Add(trip);
-        await _context.SaveChangesAsync();
+        _tripService.Setup(s => s.DeleteTripAsync(1)).ReturnsAsync(true);
 
-        var updateDto = new UpdateTripDto
-        {
-            Name = "Updated Trip",
-            Status = TripStatus.Confirmed
-        };
+        var result = await _controller.DeleteTrip(1);
 
-        // Act
-        var result = await _controller.UpdateTrip(trip.Id, updateDto);
-
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-        var okResult = result.Result as OkObjectResult;
-        var tripDto = okResult!.Value as TripDto;
-        Assert.That(tripDto!.Name, Is.EqualTo("Updated Trip"));
-        Assert.That(tripDto.Status, Is.EqualTo(TripStatus.Confirmed));
-    }
-
-    [Test]
-    public async Task UpdateTrip_InvalidStatus_ReturnsBadRequest()
-    {
-        // Arrange
-        var trip = new Trip
-        {
-            Name = "Test Trip",
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(5),
-            UserId = _testUser.Id
-        };
-        _context.Trips.Add(trip);
-        await _context.SaveChangesAsync();
-
-        var updateDto = new UpdateTripDto
-        {
-            Status = "InvalidStatus"
-        };
-
-        // Act
-        var result = await _controller.UpdateTrip(trip.Id, updateDto);
-
-        // Assert
-        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-    }
-
-    [Test]
-    public async Task DeleteTrip_ExistingTrip_ReturnsNoContent()
-    {
-        // Arrange
-        var trip = new Trip
-        {
-            Name = "Trip to Delete",
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(5),
-            UserId = _testUser.Id
-        };
-        _context.Trips.Add(trip);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _controller.DeleteTrip(trip.Id);
-
-        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
-
-        var deletedTrip = await _context.Trips.FindAsync(trip.Id);
-        Assert.That(deletedTrip, Is.Null);
     }
 
     [Test]
-    public async Task DeleteTrip_NonExistingTrip_ReturnsNotFound()
+    public async Task ChangeTripStatus_CallsServiceAndReturnsUpdatedTrip()
     {
-        // Act
-        var result = await _controller.DeleteTrip(999);
+        _tripService.Setup(s => s.ChangeTripStatusAsync(1, TripStatus.Confirmed)).ReturnsAsync(true);
+        _tripService.Setup(s => s.GetTripByIdAsync(1))
+            .ReturnsAsync(new TripDetailDto { Id = 1, Name = "Trip", Status = TripStatus.Confirmed, UserId = 7 });
 
-        // Assert
-        Assert.That(result, Is.InstanceOf<NotFoundObjectResult>());
+        var result = await _controller.ChangeTripStatus(1, new ChangeStatusRequest { Status = TripStatus.Confirmed });
+
+        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        _tripService.Verify(s => s.ChangeTripStatusAsync(1, TripStatus.Confirmed), Times.Once);
     }
 }

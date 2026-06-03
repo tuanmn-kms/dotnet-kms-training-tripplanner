@@ -1,10 +1,8 @@
-using KMSTraining.API.Data;
-using KMSTraining.API.DTOs;
-using KMSTraining.API.Models;
+using KMSTraining.API.Application.DTOs;
+using KMSTraining.API.Application.Services;
+using KMSTraining.API.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace KMSTraining.API.Controllers;
 
@@ -13,175 +11,134 @@ namespace KMSTraining.API.Controllers;
 [Authorize]
 public class BudgetsController : ControllerBase
 {
-    private readonly TripPlannerDbContext _context;
+    private readonly IBudgetService _budgetService;
+    private readonly ILogger<BudgetsController> _logger;
 
-    public BudgetsController(TripPlannerDbContext context)
+    public BudgetsController(IBudgetService budgetService, ILogger<BudgetsController> logger)
     {
-        _context = context;
+        _budgetService = budgetService;
+        _logger = logger;
     }
 
-    private int GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.Parse(userIdClaim ?? "0");
-    }
 
+    /// <summary>
+    /// Get all budgets for a trip
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<BudgetDto>>> GetBudgets([FromQuery] int? tripId = null)
     {
-        var userId = GetCurrentUserId();
-        var query = _context.Budgets
-            .Include(b => b.Trip)
-            .Where(b => b.Trip.UserId == userId);
-
-        if (tripId.HasValue)
+        try
         {
-            query = query.Where(b => b.TripId == tripId.Value);
+            _logger.LogInformation("Fetching budgets for trip {TripId}", tripId);
+            var budgets = await _budgetService.GetTripBudgetsAsync(tripId ?? 0);
+            return Ok(budgets);
         }
-
-        var budgets = await query
-            .Select(b => new BudgetDto
-            {
-                Id = b.Id,
-                Category = b.Category,
-                PlannedAmount = b.PlannedAmount,
-                ActualAmount = b.ActualAmount,
-                Notes = b.Notes,
-                TripId = b.TripId,
-                CreatedAt = b.CreatedAt,
-                UpdatedAt = b.UpdatedAt
-            })
-            .ToListAsync();
-
-        return Ok(budgets);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching budgets for trip {TripId}", tripId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error fetching budgets" });
+        }
     }
 
+    /// <summary>
+    /// Get a specific budget
+    /// </summary>
     [HttpGet("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BudgetDto>> GetBudget(int id)
     {
-        var userId = GetCurrentUserId();
-        var budget = await _context.Budgets
-            .Include(b => b.Trip)
-            .FirstOrDefaultAsync(b => b.Id == id && b.Trip.UserId == userId);
-
-        if (budget == null)
+        try
         {
-            return NotFound(new { message = "Budget not found" });
+            _logger.LogInformation("Fetching budget {BudgetId}", id);
+            var budget = await _budgetService.GetBudgetByIdAsync(id);
+
+            if (budget == null)
+            {
+                return NotFound(new { message = "Budget not found" });
+            }
+            
+            return Ok(budget);
         }
-
-        var budgetDto = new BudgetDto
+        catch (Exception ex)
         {
-            Id = budget.Id,
-            Category = budget.Category,
-            PlannedAmount = budget.PlannedAmount,
-            ActualAmount = budget.ActualAmount,
-            Notes = budget.Notes,
-            TripId = budget.TripId,
-            CreatedAt = budget.CreatedAt,
-            UpdatedAt = budget.UpdatedAt
-        };
-
-        return Ok(budgetDto);
+            _logger.LogError(ex, "Error fetching budget {BudgetId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error fetching budget" });
+        }
     }
 
+    /// <summary>
+    /// Create a new budget
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<BudgetDto>> CreateBudget([FromBody] CreateBudgetDto createBudgetDto)
     {
-        var userId = GetCurrentUserId();
-        var trip = await _context.Trips.FirstOrDefaultAsync(t => t.Id == createBudgetDto.TripId && t.UserId == userId);
-
-        if (trip == null)
+        try
         {
-            return NotFound(new { message = "Trip not found" });
+            _logger.LogInformation("Creating budget for trip {TripId}", createBudgetDto.TripId);
+            var budget = await _budgetService.CreateBudgetAsync(createBudgetDto.TripId, createBudgetDto);
+            return CreatedAtAction(nameof(GetBudget), new { id = budget.Id }, budget);
         }
-
-        var budget = new Budget
+        catch (Exception ex)
         {
-            Category = createBudgetDto.Category,
-            PlannedAmount = createBudgetDto.PlannedAmount,
-            ActualAmount = createBudgetDto.ActualAmount,
-            Notes = createBudgetDto.Notes,
-            TripId = createBudgetDto.TripId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Budgets.Add(budget);
-        await _context.SaveChangesAsync();
-
-        var budgetDto = new BudgetDto
-        {
-            Id = budget.Id,
-            Category = budget.Category,
-            PlannedAmount = budget.PlannedAmount,
-            ActualAmount = budget.ActualAmount,
-            Notes = budget.Notes,
-            TripId = budget.TripId,
-            CreatedAt = budget.CreatedAt,
-            UpdatedAt = budget.UpdatedAt
-        };
-
-        return CreatedAtAction(nameof(GetBudget), new { id = budget.Id }, budgetDto);
+            _logger.LogError(ex, "Error creating budget");
+            return BadRequest(new { message = "Error creating budget" });
+        }
     }
 
+    /// <summary>
+    /// Update a budget
+    /// </summary>
     [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BudgetDto>> UpdateBudget(int id, [FromBody] UpdateBudgetDto updateBudgetDto)
     {
-        var userId = GetCurrentUserId();
-        var budget = await _context.Budgets
-            .Include(b => b.Trip)
-            .FirstOrDefaultAsync(b => b.Id == id && b.Trip.UserId == userId);
-
-        if (budget == null)
+        try
         {
-            return NotFound(new { message = "Budget not found" });
+            _logger.LogInformation("Updating budget {BudgetId}", id);
+            var budget = await _budgetService.UpdateBudgetAsync(id, updateBudgetDto);
+            return Ok(budget);
         }
-
-        if (!string.IsNullOrEmpty(updateBudgetDto.Category))
-            budget.Category = updateBudgetDto.Category;
-
-        if (updateBudgetDto.PlannedAmount.HasValue)
-            budget.PlannedAmount = updateBudgetDto.PlannedAmount.Value;
-
-        if (updateBudgetDto.ActualAmount.HasValue)
-            budget.ActualAmount = updateBudgetDto.ActualAmount.Value;
-
-        if (updateBudgetDto.Notes != null)
-            budget.Notes = updateBudgetDto.Notes;
-
-        budget.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        var budgetDto = new BudgetDto
+        catch (EntityNotFoundException ex)
         {
-            Id = budget.Id,
-            Category = budget.Category,
-            PlannedAmount = budget.PlannedAmount,
-            ActualAmount = budget.ActualAmount,
-            Notes = budget.Notes,
-            TripId = budget.TripId,
-            CreatedAt = budget.CreatedAt,
-            UpdatedAt = budget.UpdatedAt
-        };
-
-        return Ok(budgetDto);
+            _logger.LogWarning("Budget not found: {BudgetId}", id);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating budget {BudgetId}", id);
+            return BadRequest(new { message = "Error updating budget" });
+        }
     }
 
+    /// <summary>
+    /// Delete a budget
+    /// </summary>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBudget(int id)
     {
-        var userId = GetCurrentUserId();
-        var budget = await _context.Budgets
-            .Include(b => b.Trip)
-            .FirstOrDefaultAsync(b => b.Id == id && b.Trip.UserId == userId);
-
-        if (budget == null)
+        try
         {
-            return NotFound(new { message = "Budget not found" });
+            _logger.LogInformation("Deleting budget {BudgetId}", id);
+            var result = await _budgetService.DeleteBudgetAsync(id);
+            
+            if (!result)
+            {
+                return NotFound(new { message = "Budget not found" });
+            }
+            
+            return NoContent();
         }
-
-        _context.Budgets.Remove(budget);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting budget {BudgetId}", id);
+            return BadRequest(new { message = "Error deleting budget" });
+        }
     }
 }
